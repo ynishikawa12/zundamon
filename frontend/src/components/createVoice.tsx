@@ -10,7 +10,7 @@ type Mora = {
   pitch: number
 }
 
-//Query型定義
+// Query型定義
 type Query = {
   accent_phrases: {
       moras: Mora[]
@@ -28,13 +28,13 @@ type Query = {
   kana: string
 }
 
-//DBデータ追加用
+// DBデータ追加用
 type ZundaVoiceData = {
   line: string
   voice: Blob
 }
 
-//Goにdataを送りDBに登録（Go処理未実装）
+// Goにdataを送りDBに登録（Go処理未実装）
 function insertZundaVoiceTable(data: ZundaVoiceData): void {
   axios.post('http://localhost:8080/insertVoice', data)
   .then(function (response) {
@@ -50,7 +50,7 @@ function App() {
   const [queryJson, setQueryJson] = useState<Query>()
   const [audioData, setAudioData] = useState<Blob>() 
   
-  //入力テキストから音声合成用クエリを作成
+  // 入力テキストから音声合成用クエリを作成
   const createQuery = async () => {
     const res = await axios.post(`http://localhost:50021/audio_query?speaker=1&text=${inputText}`)
 
@@ -59,7 +59,7 @@ function App() {
     setQueryJson(res.data as Query)
   }
 
-  //クエリから音声合成
+  // クエリから音声合成
   const createVoice = async () => {
     const res = await axios.post('http://localhost:50021/synthesis?speaker=1',
       queryJson,
@@ -70,7 +70,7 @@ function App() {
 
     setAudioData(res.data as Blob)
 
-    //DBにも追加（Go処理未実装）
+    // DBにも追加（Go処理未実装）
     insertZundaVoiceTable({line: inputText} as ZundaVoiceData)
   }
 
@@ -86,23 +86,23 @@ function App() {
         />
       </div>
 
-      {inputText ? (
+      {inputText && (
         <div>
           <p>↓</p>
           <h2>文章からクエリデータを作成</h2>
           <button onClick={createQuery}>クエリ作成</button>
         </div>
-      ) : null}
+      )}
 
-      {queryJson ? (
+      {queryJson && (
         <div>
           <p>↓</p>
           <h2>クエリデータから音声を合成</h2>
           <button onClick={createVoice}>音声合成</button>
         </div>
-      ) : null}
+      )}
       
-      {audioData ? (
+      {audioData && (
         <div>
           <p>↓</p>
           <h2>返却された音声ファイルを再生</h2>
@@ -111,7 +111,7 @@ function App() {
             src={audioData ? window.URL.createObjectURL(audioData) : undefined}>
           </audio>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
