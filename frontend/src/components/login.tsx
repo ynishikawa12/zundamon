@@ -1,14 +1,28 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import axios from 'axios';
-import { LOCAL_URL, LOGIN_URL } from "../utils/url";
+import { LOCAL_URL, LOGIN_URL } from "../consts/url";
 
-const Login = () => {
+type LoginInfo = {
+    userName: string | undefined;
+    password: string | undefined;
+}
+
+function Login () {
     const [userName, setUserName] = useState<string>();
     const [password, setPassowrd] = useState<string>();
     const [loginFailed, setLoginFailed] = useState<boolean>(false);
 
-    function login(name: string, password: string) {
-        const encodedName = btoa(unescape(encodeURIComponent(name)));
+    
+    const LoginButton = useCallback(({userName, password}: LoginInfo) => {
+        if (userName != undefined && userName != "" && password != undefined && password != "") {
+            return <button type="submit" onClick={() => login(userName, password)}>ログイン</button>
+        } else {
+            return <button disabled>ログイン</button>
+        }
+    },[userName, password])
+
+    const login = useCallback((userName: string, password: string) => {
+        const encodedName = btoa(unescape(encodeURIComponent(userName)));
         const encodedPassowrd = btoa(unescape(encodeURIComponent(password)));
 
         const headers = {
@@ -23,10 +37,8 @@ const Login = () => {
         })
         .catch(function (error) {
             setLoginFailed(true);
-            setUserName("");
-            setPassowrd("");
         })
-    }
+    },[userName, password])
 
     return (
         <>
@@ -49,12 +61,7 @@ const Login = () => {
                     onChange={(e) => setPassowrd(e.target.value)}
                 /> 
             </p>
-            {userName === undefined || userName === "" || password === undefined || password === "" ? (
-                <button disabled>ログイン</button>
-            ) : (
-                <button type="submit" onClick={() => login(userName, password)}>ログイン</button>
-            )}
-            
+            <LoginButton userName={userName} password={password}/>
         </>
     )
 }
