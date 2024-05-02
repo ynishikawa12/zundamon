@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import axios from 'axios';
 import { LOCAL_URL, LOGIN_URL } from "../consts/url";
 
@@ -7,17 +7,17 @@ type LoginInfo = {
     password: string | undefined;
 }
 
-function Login () {
+export default function Login () {
     const [userName, setUserName] = useState<string>();
     const [password, setPassowrd] = useState<string>();
     const [loginFailed, setLoginFailed] = useState<boolean>(false);
-
     
-    const LoginButton = useCallback(({userName, password}: LoginInfo) => {
-        if (userName != undefined && userName != "" && password != undefined && password != "") {
-            return <button type="submit" onClick={() => login(userName, password)}>ログイン</button>
+    const LoginButton = useMemo(() => {
+        const canSubmit = userName && password;
+        if (canSubmit) {
+            return <><button type="submit" onClick={() => login(userName, password)}>ログイン</button></>
         } else {
-            return <button disabled>ログイン</button>
+            return <><button disabled>ログイン</button></>
         }
     },[userName, password])
 
@@ -65,5 +65,3 @@ function Login () {
         </>
     )
 }
-
-export {Login};
