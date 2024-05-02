@@ -2,12 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import axios from 'axios';
 import { LOCAL_URL, LOGIN_URL } from "../consts/url";
 
-type LoginInfo = {
-    userName: string | undefined;
-    password: string | undefined;
-}
-
-export default function Login () {
+export function Login () {
     const [userName, setUserName] = useState<string>();
     const [password, setPassowrd] = useState<string>();
     const [loginFailed, setLoginFailed] = useState<boolean>(false);
@@ -33,6 +28,7 @@ export default function Login () {
         .then(function (response) {
             if (response.status === 204) {
                 // TODO
+                alert("OK");
             }
         })
         .catch(function (error) {
@@ -61,7 +57,7 @@ export default function Login () {
                     onChange={(e) => setPassowrd(e.target.value)}
                 /> 
             </p>
-            <LoginButton userName={userName} password={password}/>
+            {LoginButton}
         </>
     )
 }
