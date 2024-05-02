@@ -15,9 +15,9 @@ export default function Login () {
     const LoginButton = useMemo(() => {
         const canSubmit = userName && password;
         if (canSubmit) {
-            return <><button type="submit" onClick={() => login(userName, password)}>ログイン</button></>
+            return <button type="submit" onClick={() => login(userName, password)}>ログイン</button>
         } else {
-            return <><button disabled>ログイン</button></>
+            return <button disabled>ログイン</button>
         }
     },[userName, password])
 
