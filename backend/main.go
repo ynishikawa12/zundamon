@@ -1,34 +1,64 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
-	"encoding/json"
-	"github.com/rs/cors"
-	"github.com/gorilla/mux"
+	"strings"
 )
 
-//DBテーブル用（未実装）
-type ZundaVoiceData struct {
-	Line string `json:"line"`
-	Voice []byte `json:"voice"`
-}
-
 func main() {
-	r := mux.NewRouter()
-	r.Methods("POST", "OPTIONS").Path("/insertVoice").HandlerFunc(insertVoice)
-	c := cors.AllowAll().Handler(r)
+	var err error
 
-	http.ListenAndServe(":8080", c)
+	err = InitDB()
+	if err != nil {
+		fmt.Println(err)
+	}
+	// リクエストハンドラ
+	http.HandleFunc("/login", loginHandler)
+
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-//DBテーブルにinsert（未完成）
-func insertVoice(w http.ResponseWriter, r *http.Request) {
-	var data ZundaVoiceData
-	json.NewDecoder(r.Body).Decode(&data)
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got request")
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 
-	fmt.Println(data)
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
 
-	json.NewEncoder(w).Encode(data)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	auth := r.Header.Get("Authorization")
+	authArray := strings.Split(auth, ":")
+	// ユーザー名取得
+	authName, err := base64.StdEncoding.DecodeString(authArray[0])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// パスワード取得
+	authPasswordEnc := string(authArray[1])
+
+	user, err := GetUser(string(authName))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if user.enc == authPasswordEnc {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 }

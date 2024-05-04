@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import axios from 'axios';
-import { LOCAL_URL, LOGIN_URL } from "../consts/url";
+import { SERVER_URL, LOGIN_URL } from "../consts/url";
 
 export function Login () {
     const [userName, setUserName] = useState<string>();
@@ -21,13 +21,15 @@ export function Login () {
         const encodedPassowrd = btoa(unescape(encodeURIComponent(password)));
 
         const headers = {
-            "Authorization": encodedName + ":" + encodedPassowrd
+            Authorization: (encodedName + ":" + encodedPassowrd)
         }
 
-        axios.post((LOCAL_URL + LOGIN_URL), {headers: headers})
+        console.log(SERVER_URL + LOGIN_URL)
+        axios.post((SERVER_URL + LOGIN_URL), {}, {headers: headers})
         .then(function (response) {
             if (response.status === 204) {
                 // TODO
+                setLoginFailed(false);
                 alert("OK");
             }
         })
