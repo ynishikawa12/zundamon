@@ -2,20 +2,20 @@ package main
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	id         string
+	id         int
 	name       string
-	enc        string
-	birthday   string
+	password   string
+	birthday   time.Time
 	bio        string
-	created_at string
-	updated_at string
+	created_at time.Time
+	updated_at time.Time
 }
 
 // DB接続
@@ -72,15 +72,16 @@ func InitDB() error {
 
 	// テストユーザー作成
 	password := []byte("testuser")
-	enc := base64.StdEncoding.EncodeToString(password)
-	time := time.Now().Format(time.DateTime)
+	hashed, _ := bcrypt.GenerateFromPassword(password, 10)
+
+	time := time.Now()
 
 	user := User{
-		"1",
+		1,
 		"testuser",
-		enc,
-		"null",
-		"null",
+		string(hashed),
+		time,
+		"自己紹介の文章",
 		time,
 		time,
 	}
@@ -99,7 +100,7 @@ func CreateTestUser(user User) error {
 
 	sql := "INSERT IGNORE INTO users VALUES (?,?,?,?,?,?,?);"
 
-	_, err = db.Exec(sql, user.id, user.name, user.enc, user.birthday, user.bio, user.created_at, user.updated_at)
+	_, err = db.Exec(sql, user.id, user.name, user.password, user.birthday, user.bio, user.created_at, user.updated_at)
 	return err
 }
 
@@ -113,7 +114,7 @@ func GetUser(name string) (User, error) {
 	defer db.Close()
 
 	sql := "SELECT * FROM users WHERE name = ?;"
-	err = db.QueryRow(sql, name).Scan(&user.id, &user.name, &user.enc, &user.birthday, &user.bio, &user.created_at, &user.updated_at)
+	err = db.QueryRow(sql, name).Scan(&user.id, &user.name, &user.password, &user.birthday, &user.bio, &user.created_at, &user.updated_at)
 	if err != nil {
 		return user, err
 	}

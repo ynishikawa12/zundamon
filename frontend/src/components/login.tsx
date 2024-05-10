@@ -35,6 +35,7 @@ export function Login () {
         })
         .catch(function (error) {
             setLoginFailed(true);
+            console.log(error);
         })
     },[userName, password])
 

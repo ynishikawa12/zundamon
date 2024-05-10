@@ -5,31 +5,34 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
-	var err error
-
-	err = InitDB()
-	if err != nil {
+	if err := InitDB(); err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 	// リクエストハンドラ
 	http.HandleFunc("/login", loginHandler)
 
-	err = http.ListenAndServe(":8080", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("got request")
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	headers := map[string]string{
+		"Access-Control-Allow-Origin":  "http://localhost:5173",
+		"Access-Control-Allow-Headers": "*",
+		"Access-Control-Allow-Methods": "POST",
+	}
 
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST")
+	for k, v := range headers {
+		w.Header().Set(k, v)
+	}
 
 	if r.Method == "OPTIONS" {
 		return
@@ -45,7 +48,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// パスワード取得
-	authPasswordEnc := string(authArray[1])
+	authPassword, err := base64.StdEncoding.DecodeString(authArray[1])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	user, err := GetUser(string(authName))
 	if err != nil {
@@ -53,12 +60,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.enc == authPasswordEnc {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	} else {
+	// パスワード比較
+	if err := bcrypt.CompareHashAndPassword([]byte(user.password), authPassword); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
+	} else {
+		w.WriteHeader(http.StatusNoContent)
 	}
 
 }
