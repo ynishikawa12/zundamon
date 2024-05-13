@@ -11,7 +11,7 @@ type User struct {
 	id         int
 	name       string
 	password   string
-	birthday   sql.NullTime
+	birthday   sql.Null[time.Time]
 	bio        string
 	created_at time.Time
 	updated_at time.Time
