@@ -17,6 +17,7 @@ type ErrorResponse struct {
 func main() {
 	// リクエストハンドラ
 	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/users", createUserHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
@@ -60,11 +61,29 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// パスワード比較
-	if err := bcrypt.CompareHashAndPassword([]byte(user.password), authPassword); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), authPassword); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	} else {
 		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+}
+
+func createUserHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got request create user")
+	headers := map[string]string{
+		"Access-Control-Allow-Origin":  "http://localhost:5173",
+		"Access-Control-Allow-Headers": "*",
+		"Access-Control-Allow-Methods": "POST",
+	}
+
+	for k, v := range headers {
+		w.Header().Set(k, v)
+	}
+
+	if r.Method == "OPTIONS" {
 		return
 	}
 
