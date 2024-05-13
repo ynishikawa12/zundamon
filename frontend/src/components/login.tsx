@@ -31,11 +31,13 @@ export function Login () {
                 // TODO
                 setLoginFailed(false);
                 alert("OK");
+            } else if (response.status != 204) {
+                console.log("test");
+                console.log("not 204", response.data);
             }
         })
         .catch(function (error) {
             setLoginFailed(true);
-            console.log(error);
         })
     },[userName, password])
 

@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 func main() {
-	if err := InitDB(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 	// リクエストハンドラ
 	http.HandleFunc("/login", loginHandler)
 
@@ -66,6 +65,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		w.WriteHeader(http.StatusNoContent)
+		return
 	}
 
 }

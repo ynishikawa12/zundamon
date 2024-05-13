@@ -5,14 +5,13 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
 	id         int
 	name       string
 	password   string
-	birthday   time.Time
+	birthday   sql.NullTime
 	bio        string
 	created_at time.Time
 	updated_at time.Time
@@ -42,66 +41,6 @@ func connectDB() (db *sql.DB, err error) {
 	}
 
 	return db, err
-}
-
-// DB初期化
-func InitDB() error {
-	db, err := connectDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	// テーブル作成
-	sql := `
-		CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTO_INCREMENT NOT NULL,
-			name VARCHAR(15) NOT NULL,
-			password VARCHAR(255) NOT NULL,
-			birthday DATE,
-			bio VARCHAR(200) NOT NULL,
-			created_at TIMESTAMP NOT NULL,
-			updated_at TIMESTAMP NOT NULL
-		);
-	`
-
-	_, err = db.Exec(sql)
-	if err != nil {
-		return err
-	}
-
-	// テストユーザー作成
-	password := []byte("testuser")
-	hashed, _ := bcrypt.GenerateFromPassword(password, 10)
-
-	time := time.Now()
-
-	user := User{
-		1,
-		"testuser",
-		string(hashed),
-		time,
-		"自己紹介の文章",
-		time,
-		time,
-	}
-
-	err = CreateTestUser(user)
-	return err
-}
-
-// テストユーザー作成
-func CreateTestUser(user User) error {
-	db, err := connectDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	sql := "INSERT IGNORE INTO users VALUES (?,?,?,?,?,?,?);"
-
-	_, err = db.Exec(sql, user.id, user.name, user.password, user.birthday, user.bio, user.created_at, user.updated_at)
-	return err
 }
 
 // 名前からユーザー取得
