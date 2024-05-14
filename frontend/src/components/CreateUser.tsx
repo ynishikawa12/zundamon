@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import axios from 'axios';
-import { SERVER_URL, LOGIN_URL, USER_URL } from "../consts/url";
+import { SERVER_URL, USER_URL } from "../consts/url";
 
 export function CreateUser() {
     const [name, setName] = useState<string>("");
@@ -8,7 +8,7 @@ export function CreateUser() {
     const [birthday, setBirthday] = useState<string>("");
     const [bio, setBio] = useState<string>("");
 
-    const sendRequest = (name: string, password: string, birthday: string, bio: string) => {
+    const sendRequest = useCallback((name: string, password: string, birthday: string, bio: string) => {
         const user = {
             Name: name,
             Password: password,
@@ -23,7 +23,7 @@ export function CreateUser() {
             .catch(function (error) {
                 console.error(error);
             })
-    }
+    }, [name,password, birthday, bio])
 
     return (
         <>
