@@ -69,6 +69,8 @@ func CreateUser(user User) (User, error) {
 	}
 	defer db.Close()
 
+	// 暗号化
+
 	sql := "INSERT INTO users (name, password, birthday, bio, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?)"
 	ins, err := db.Prepare(sql)
 	if err != nil {
