@@ -8,13 +8,13 @@ import (
 )
 
 type User struct {
-	Id         int          `json:"id"`
-	Name       string       `json:"name"`
-	Password   string       `json:"password"`
-	Birthday   sql.NullTime `json:"birthday"`
-	Bio        string       `json:"bio"`
-	Created_at time.Time    `json:"created_at"`
-	Updated_at time.Time    `json:"updated_at"`
+	Id         int                 `json:"id"`
+	Name       string              `json:"name"`
+	Password   string              `json:"password"`
+	Birthday   sql.Null[time.Time] `json:"birthday"`
+	Bio        string              `json:"bio"`
+	Created_at time.Time           `json:"created_at"`
+	Updated_at time.Time           `json:"updated_at"`
 }
 
 // DB接続
@@ -62,22 +62,20 @@ func GetUser(name string) (User, error) {
 }
 
 // ユーザー作成
-func CreateUser(user User) (User, error) {
+func CreateUser(user User) error {
 	db, err := connectDB()
 	if err != nil {
-		return user, err
+		return err
 	}
 	defer db.Close()
-
-	// 暗号化
 
 	sql := "INSERT INTO users (name, password, birthday, bio, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?)"
 	ins, err := db.Prepare(sql)
 	if err != nil {
-		return user, err
+		return err
 	}
 
 	ins.Exec(user.Name, user.Password, user.Birthday, user.Bio, user.Created_at, user.Updated_at)
 
-	return user, err
+	return err
 }

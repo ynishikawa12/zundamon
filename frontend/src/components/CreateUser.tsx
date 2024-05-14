@@ -1,16 +1,29 @@
 import { useCallback, useMemo, useState } from "react";
-import { useDateSelect } from "react-ymd-date-select";
 import axios from 'axios';
-import { SERVER_URL, LOGIN_URL } from "../consts/url";
-
-type User = {
-    name: string;
-    password: string;
-    birthday: Date;
-    bio: string;
-}
+import { SERVER_URL, LOGIN_URL, USER_URL } from "../consts/url";
 
 export function CreateUser() {
+    const [name, setName] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    const [birthday, setBirthday] = useState<string>("");
+    const [bio, setBio] = useState<string>("");
+
+    const sendRequest = (name: string, password: string, birthday: string, bio: string) => {
+        const user = {
+            Name: name,
+            Password: password,
+            Birthday: birthday === "" ? null : birthday,
+            Bio: bio,
+        }
+
+        axios.post((SERVER_URL + USER_URL), user)
+            .then(function (response) {
+                console.log(response);
+            })
+            .catch(function (error) {
+                console.error(error);
+            })
+    }
 
     return (
         <>
@@ -19,9 +32,9 @@ export function CreateUser() {
                     type="text"
                     placeholder="ユーザー名"
                     maxLength={15}
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                />  
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                />
             </p>
             <p>パスワード：
                 <input 
@@ -29,9 +42,28 @@ export function CreateUser() {
                     placeholder="パスワード"
                     maxLength={10}
                     value={password}
-                    onChange={(e) => setPassowrd(e.target.value)}
-                /> 
+                    onChange={(e) => setPassword(e.target.value)}
+                />
             </p>
+            <p>
+                生年月日（任意）：
+                <input 
+                    type="text"
+                    placeholder="19900101"
+                    maxLength={8}
+                    value={birthday}
+                    onChange={(e) => setBirthday((e.target.value.replace(/[^0-9]/g, '')))}
+                />
+            </p>
+            <p>
+                自己紹介：
+                <textarea 
+                    maxLength={200}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                />
+            </p>
+            <button onClick={() => sendRequest(name, password, birthday, bio)}>作成</button>
         </>
     )
 }

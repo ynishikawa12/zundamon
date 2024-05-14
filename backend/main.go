@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -85,6 +88,27 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "OPTIONS" {
 		return
+	}
+
+	bytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var user User
+	if err := json.Unmarshal(bytes, &user); err != nil {
+		fmt.Println(err)
+	}
+
+	// パスワード暗号化
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	user.Password = string(hashed)
+
+	user.Created_at = time.Now()
+	user.Updated_at = time.Now()
+
+	if err := CreateUser(user); err != nil {
+		fmt.Println(err)
 	}
 
 }
