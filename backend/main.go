@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,6 +20,15 @@ func main() {
 	http.HandleFunc("/login", loginHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func newErrorResponse(err error) ErrorResponse {
+	return ErrorResponse{Error: err.Error()}
+}
+
+func writeResponse(w http.ResponseWriter, code int, body any) {
+	json.NewEncoder(w).Encode(body)
+	w.WriteHeader(code)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -42,30 +52,29 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	// ユーザー名取得
 	authName, err := base64.StdEncoding.DecodeString(authArray[0])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
 	// パスワード取得
 	authPassword, err := base64.StdEncoding.DecodeString(authArray[1])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
 	user, err := GetUser(string(authName))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
 	// パスワード比較
 	if err := bcrypt.CompareHashAndPassword([]byte(user.password), authPassword); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	} else {
-		w.WriteHeader(http.StatusNoContent)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 
 }

@@ -32,11 +32,12 @@ export function Login () {
                 setLoginFailed(false);
                 alert("OK");
             } else if (response.status != 204) {
-                console.log("test");
-                console.log("not 204", response.data);
+                console.log(response.data);
+                setLoginFailed(true);
             }
         })
         .catch(function (error) {
+            console.log(error)
             setLoginFailed(true);
         })
     },[userName, password])
