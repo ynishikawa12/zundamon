@@ -1,8 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
+import { SetStateAction, useCallback, useMemo, useState } from "react";
 import axios from 'axios';
 import { SERVER_URL, LOGIN_URL } from "../consts/url";
 
-export function Login () {
+type Props = {
+    setLoginedName: React.Dispatch<SetStateAction<string>>;
+}
+
+export function Login ({setLoginedName}: Props) {
     const [userName, setUserName] = useState<string>();
     const [password, setPassowrd] = useState<string>();
     const [loginFailed, setLoginFailed] = useState<boolean>(false);
@@ -30,6 +34,7 @@ export function Login () {
             if (response.status === 204) {
                 // TODO
                 setLoginFailed(false);
+                setLoginedName(userName)
                 alert("OK");
             } else if (response.status != 204) {
                 console.log("test");

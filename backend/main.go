@@ -21,12 +21,22 @@ func main() {
 	// リクエストハンドラ
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/users", createUserHandler)
+	http.HandleFunc("/users/{name}", getUserHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+func newErrorResponse(err error) ErrorResponse {
+	return ErrorResponse{Error: err.Error()}
+}
+
+func writeResponse(w http.ResponseWriter, code int, body any) {
+	json.NewEncoder(w).Encode(body)
+	w.WriteHeader(code)
+}
+
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("got request")
+	fmt.Println("got request login")
 	headers := map[string]string{
 		"Access-Control-Allow-Origin":  "http://localhost:5173",
 		"Access-Control-Allow-Headers": "*",
@@ -46,32 +56,56 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	// ユーザー名取得
 	authName, err := base64.StdEncoding.DecodeString(authArray[0])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
 	// パスワード取得
 	authPassword, err := base64.StdEncoding.DecodeString(authArray[1])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
 	user, err := GetUser(string(authName))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
 	// パスワード比較
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), authPassword); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	} else {
-		w.WriteHeader(http.StatusNoContent)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func getUserHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got request get user: " + r.PathValue("name"))
+	headers := map[string]string{
+		"Access-Control-Allow-Origin":  "http://localhost:5173",
+		"Access-Control-Allow-Headers": "*",
+		"Access-Control-Allow-Methods": "GET",
+	}
+
+	for k, v := range headers {
+		w.Header().Set(k, v)
+	}
+
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	user, err := GetUser(r.PathValue("name"))
+	if err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		return
+	}
+
+	user.Password = ""
+	json.NewEncoder(w).Encode(user)
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +142,9 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	user.Updated_at = time.Now()
 
 	if err := CreateUser(user); err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		fmt.Println(err)
 	}
 
+	w.WriteHeader(http.StatusCreated)
 }
