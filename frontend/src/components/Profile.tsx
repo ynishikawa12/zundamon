@@ -47,6 +47,31 @@ export function Profile({username}: Props) {
                     onChange={(e) => setName(e.target.value)}
                 />
             </p>
+            <p>パスワード：
+                <input 
+                    type="password"
+                    placeholder="パスワード"
+                    maxLength={10}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                /> 
+            </p>
+            <p>生年月日（任意）：
+                <input 
+                    type="text"
+                    placeholder="19900101"
+                    maxLength={8}
+                    value={birthday}
+                    onChange={(e) => setBirthday((e.target.value.replace(/[^0-9]/g, '')))}
+                />
+            </p>
+            <p>自己紹介：
+                <textarea 
+                    maxLength={200}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                />
+            </p>
         </>
     )
 }

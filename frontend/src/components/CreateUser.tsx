@@ -9,10 +9,12 @@ export function CreateUser() {
     const [bio, setBio] = useState<string>("");
 
     const sendRequest = (name: string, password: string, birthday: string, bio: string) => {
+        const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
+        console.log(date.toISOString())
         const user = {
             Name: name,
             Password: password,
-            Birthday: birthday === "" ? null : birthday,
+            Birthday: birthday === "" ? null : {V: date.toISOString(), Valid: true},
             Bio: bio,
         }
 
