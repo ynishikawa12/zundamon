@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"zundamon/db"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -16,7 +18,9 @@ type ErrorResponse struct {
 }
 
 func main() {
-	// リクエストハンドラ
+	db.InitDB()
+	defer db.GetDB().Close()
+
 	http.HandleFunc("/login", loginHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -32,7 +36,7 @@ func writeResponse(w http.ResponseWriter, code int, body any) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("got request")
+	fmt.Println("got request login")
 	headers := map[string]string{
 		"Access-Control-Allow-Origin":  "http://localhost:5173",
 		"Access-Control-Allow-Headers": "*",
@@ -48,33 +52,26 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	auth := r.Header.Get("Authorization")
-	authArray := strings.Split(auth, ":")
-	// ユーザー名取得
-	authName, err := base64.StdEncoding.DecodeString(authArray[0])
+	decoded, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		return
+	}
+	authArray := strings.Split(string(decoded), ":")
+
+	userName := authArray[0]
+	authPassword := authArray[1]
+
+	user, err := db.GetUser(string(userName))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
-	// パスワード取得
-	authPassword, err := base64.StdEncoding.DecodeString(authArray[1])
-	if err != nil {
-		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
-		return
-	}
-
-	user, err := GetUser(string(authName))
-	if err != nil {
-		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
-		return
-	}
-
-	// パスワード比較
-	if err := bcrypt.CompareHashAndPassword([]byte(user.password), authPassword); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(authPassword)); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-
 }

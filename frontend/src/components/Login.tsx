@@ -17,11 +17,9 @@ export function Login () {
     },[userName, password])
 
     const login = useCallback((userName: string, password: string) => {
-        const encodedName = btoa(unescape(encodeURIComponent(userName)));
-        const encodedPassowrd = btoa(unescape(encodeURIComponent(password)));
-
+        const encoded = btoa(unescape(encodeURIComponent(userName + ":" + password)));
         const headers = {
-            Authorization: (encodedName + ":" + encodedPassowrd)
+            Authorization: (encoded)
         }
 
         console.log(SERVER_URL + LOGIN_URL)
@@ -30,14 +28,12 @@ export function Login () {
             if (response.status === 204) {
                 // TODO
                 setLoginFailed(false);
-                alert("OK");
+                alert("ログイン成功");
             } else if (response.status != 204) {
-                console.log(response.data);
-                setLoginFailed(true);
+                console.log("not 204", response.data);
             }
         })
         .catch(function (error) {
-            console.log(error)
             setLoginFailed(true);
         })
     },[userName, password])
