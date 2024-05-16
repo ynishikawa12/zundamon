@@ -1,12 +1,14 @@
 import { useCallback, useState } from "react";
 import axios from 'axios';
 import { SERVER_URL, USER_URL } from "../consts/url";
+import { useNavigate } from "react-router-dom";
 
 export function CreateUser() {
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [birthday, setBirthday] = useState<string>("");
     const [bio, setBio] = useState<string>("");
+    const navigate = useNavigate();
 
     const sendRequest = useCallback((name: string, password: string, birthday: string, bio: string) => {
         const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
@@ -29,6 +31,7 @@ export function CreateUser() {
 
     return (
         <>
+            <h3>ユーザー作成</h3>
             <p>ユーザー名：
                 <input 
                     type="text"
@@ -65,6 +68,7 @@ export function CreateUser() {
                     onChange={(e) => setBio(e.target.value)}
                 />
             </p>
+            <button onClick={() => navigate("/")}>戻る</button>
             <button onClick={() => sendRequest(name, password, birthday, bio)}>作成</button>
         </>
     )
