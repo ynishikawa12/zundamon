@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import axios from 'axios';
-import { SERVER_URL, LOGIN_URL, USER_URL } from "../consts/url";
+import { SERVER_URL, USER_URL } from "../consts/url";
 
 export function CreateUser() {
     const [name, setName] = useState<string>("");
@@ -8,9 +8,8 @@ export function CreateUser() {
     const [birthday, setBirthday] = useState<string>("");
     const [bio, setBio] = useState<string>("");
 
-    const sendRequest = (name: string, password: string, birthday: string, bio: string) => {
+    const sendRequest = useCallback((name: string, password: string, birthday: string, bio: string) => {
         const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
-        console.log(date.toISOString())
         const user = {
             Name: name,
             Password: password,
@@ -20,12 +19,12 @@ export function CreateUser() {
 
         axios.post((SERVER_URL + USER_URL), user)
             .then(function (response) {
-                console.log(response);
+                alert("ユーザー：" + name + "を作成しました")
             })
             .catch(function (error) {
                 console.error(error);
             })
-    }
+    }, [name, password, birthday, bio])
 
     return (
         <>
@@ -54,7 +53,7 @@ export function CreateUser() {
                     placeholder="19900101"
                     maxLength={8}
                     value={birthday}
-                    onChange={(e) => setBirthday((e.target.value.replace(/[^0-9]/g, '')))}
+                    onChange={(e) => setBirthday((e.target.value.replace(/[^0-9]/, '')))}
                 />
             </p>
             <p>

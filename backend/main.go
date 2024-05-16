@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"zundamon/db"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,7 +20,9 @@ type ErrorResponse struct {
 }
 
 func main() {
-	// リクエストハンドラ
+	db.InitDB()
+	defer db.GetDB().Close()
+
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/users", createUserHandler)
 	http.HandleFunc("/users/{name}", getUserHandler)
@@ -52,29 +56,23 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	auth := r.Header.Get("Authorization")
-	authArray := strings.Split(auth, ":")
-	// ユーザー名取得
-	authName, err := base64.StdEncoding.DecodeString(authArray[0])
+	decoded, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		return
+	}
+	authArray := strings.Split(string(decoded), ":")
+
+	userName := authArray[0]
+	authPassword := authArray[1]
+
+	user, err := db.GetUser(string(userName))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
-	// パスワード取得
-	authPassword, err := base64.StdEncoding.DecodeString(authArray[1])
-	if err != nil {
-		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
-		return
-	}
-
-	user, err := GetUser(string(authName))
-	if err != nil {
-		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
-		return
-	}
-
-	// パスワード比較
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), authPassword); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(authPassword)); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
@@ -98,7 +96,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := GetUser(r.PathValue("name"))
+	user, err := db.GetUser(r.PathValue("name"))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
@@ -126,24 +124,26 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	bytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
+		return
 	}
 
-	var user User
+	var user db.User
 	if err := json.Unmarshal(bytes, &user); err != nil {
-		fmt.Println(err)
+		log.Println(err)
+		return
 	}
 
-	// パスワード暗号化
 	hashed, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	user.Password = string(hashed)
 
 	user.Created_at = time.Now()
 	user.Updated_at = time.Now()
 
-	if err := CreateUser(user); err != nil {
+	if err := db.CreateUser(user); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
-		fmt.Println(err)
+		log.Println(err)
+		return
 	}
 
 	w.WriteHeader(http.StatusCreated)

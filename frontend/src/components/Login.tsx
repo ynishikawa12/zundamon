@@ -21,11 +21,9 @@ export function Login ({setLoginedName}: Props) {
     },[userName, password])
 
     const login = useCallback((userName: string, password: string) => {
-        const encodedName = btoa(unescape(encodeURIComponent(userName)));
-        const encodedPassowrd = btoa(unescape(encodeURIComponent(password)));
-
+        const encoded = btoa(unescape(encodeURIComponent(userName + ":" + password)));
         const headers = {
-            Authorization: (encodedName + ":" + encodedPassowrd)
+            Authorization: (encoded)
         }
 
         console.log(SERVER_URL + LOGIN_URL)
@@ -34,10 +32,9 @@ export function Login ({setLoginedName}: Props) {
             if (response.status === 204) {
                 // TODO
                 setLoginFailed(false);
-                setLoginedName(userName)
-                alert("OK");
+                setLoginedName(userName);
+                alert("ログイン成功");
             } else if (response.status != 204) {
-                console.log("test");
                 console.log("not 204", response.data);
             }
         })
