@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
-	"io"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"zundamon/db"
 
@@ -20,7 +21,7 @@ type ErrorResponse struct {
 
 func main() {
 	db.InitDB()
-	defer db.GetDB().Close()
+	defer db.DB.Close()
 
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/users", createUserHandler)
@@ -29,12 +30,28 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+func validateUser(user db.User) error {
+	const userNameCountLimit = 15
+	if utf8.RuneCountInString(user.Name) > userNameCountLimit {
+		return errors.New("name is too long")
+	}
+
+	const userBioCountLimit = 200
+	if utf8.RuneCountInString(user.Bio) > userBioCountLimit {
+		return errors.New("bio is too long")
+	}
+
+	return nil
+}
+
 func newErrorResponse(err error) ErrorResponse {
 	return ErrorResponse{Error: err.Error()}
 }
 
 func writeResponse(w http.ResponseWriter, code int, body any) {
-	json.NewEncoder(w).Encode(body)
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		log.Println(err)
+	}
 	w.WriteHeader(code)
 }
 
@@ -64,7 +81,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	userName := authArray[0]
 	authPassword := authArray[1]
 
-	user, err := db.GetUser(string(userName))
+	user, err := db.GetUserByName(string(userName))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
@@ -93,14 +110,16 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.GetUser(r.PathValue("name"))
+	user, err := db.GetUserByName(r.PathValue("name"))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
 	user.Password = ""
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Println(err)
+	}
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -118,25 +137,30 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bytes, err := io.ReadAll(r.Body)
+	var user *db.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		log.Println(err)
+		return
+	}
+
+	if err := validateUser(*user); err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-
-	var user db.User
-	if err := json.Unmarshal(bytes, &user); err != nil {
-		log.Println(err)
-		return
-	}
-
-	hashed, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	user.Password = string(hashed)
 
-	user.Created_at = time.Now()
-	user.Updated_at = time.Now()
+	now := time.Now()
+	user.Created_at = now
+	user.Updated_at = now
 
-	if err := db.CreateUser(user); err != nil {
+	if err := db.CreateUser(*user); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		log.Println(err)
 		return
