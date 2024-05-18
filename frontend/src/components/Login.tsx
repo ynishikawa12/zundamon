@@ -19,14 +19,13 @@ export function Login () {
     const login = useCallback((userName: string, password: string) => {
         const encoded = btoa(unescape(encodeURIComponent(userName + ":" + password)));
         const headers = {
-            Authorization: (encoded)
+            Authorization: encoded
         }
 
-        console.log(SERVER_URL + LOGIN_URL)
         axios.post((SERVER_URL + LOGIN_URL), {}, {headers: headers})
         .then(function (response) {
             if (response.status === 204) {
-                // TODO
+                // TODO 音声合成画面へ遷移
                 setLoginFailed(false);
                 alert("ログイン成功");
             } else if (response.status != 204) {
