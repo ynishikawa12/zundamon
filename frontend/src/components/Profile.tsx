@@ -6,7 +6,15 @@ type Props = {
     username: string;
 }
 
+type User = {
+    name: string;
+    password: string;
+    birthday: string;
+    bio: string;
+}
+
 export function Profile({username}: Props) {
+    const [currentUser, setCurrentUser] = useState<User>();
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [birthday, setBirthday] = useState<string>("");
@@ -16,29 +24,37 @@ export function Profile({username}: Props) {
     const [editBirthday, setEditBirthday] = useState<boolean>(false);
     const [editBio, setEditBio] = useState<boolean>(false);
 
-    // APIにGETリクエスト
     const sendGetRequest = useCallback((username: string) => {
         console.log(SERVER_URL + USER_URL + "/" + username)
         axios.get((SERVER_URL + USER_URL + "/" + username))
             .then(function (response) {
-                console.log(response.data);
                 setName(response.data.name);
                 setPassword(response.data.password);
                 setBio(response.data.bio);
 
+                let stringBirthday = "";
                 if (response.data.birthday.Valid) {
-                    setBirthday(new Date(response.data.birthday.V).toLocaleDateString().replace("/", "").replace("/", ""));
+                    stringBirthday = new Date(response.data.birthday.V).toLocaleDateString().replace("/", "").replace("/", "")
+                    setBirthday(stringBirthday);
                 } else {
-                    setBirthday("");
+                    setBirthday(stringBirthday);
                 }
+
+                setCurrentUser({
+                    name: response.data.name,
+                    password: response.data.password,
+                    birthday: stringBirthday,
+                    bio: response.data.bio,
+                })
             })
             .catch(function (error) {
                 console.error(error);
             })
-    }, [username])
+    }, [username]);
 
-    // APIにPATCHリクエスト
-    
+    const sendPatchRequest = useCallback(() => {
+
+    }, [username, password, birthday, bio]);
 
     // 編集ボタン
     const editButton = useCallback((setState: React.Dispatch<SetStateAction<boolean>>) => {
@@ -67,7 +83,9 @@ export function Profile({username}: Props) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
             /> :
-            <>****</>
+            <>
+                {password === "" ? "****" : password} 
+            </>
         )
     }, [editPassword, password])
 

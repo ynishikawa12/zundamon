@@ -18,12 +18,12 @@ type User struct {
 	Updated_at time.Time           `json:"updated_at"`
 }
 
-var sqlDB *sql.DB
+var DB *sql.DB
 
-func ConnectDB() (db *sql.DB, err error) {
+func ConnectDB() (err error) {
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		return db, err
+		return err
 	}
 
 	c := mysql.Config{
@@ -37,22 +37,18 @@ func ConnectDB() (db *sql.DB, err error) {
 		Loc:       jst,
 	}
 
-	db, err = sql.Open("mysql", c.FormatDSN())
-	if err != nil {
-		return db, err
+	var error error
+	DB, error = sql.Open("mysql", c.FormatDSN())
+	if error != nil {
+		return error
 	}
 
-	return db, err
+	return nil
 }
 
 func InitDB() {
-	var err error
-	sqlDB, err = ConnectDB()
+	err := ConnectDB()
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func GetDB() (db *sql.DB) {
-	return sqlDB
 }
