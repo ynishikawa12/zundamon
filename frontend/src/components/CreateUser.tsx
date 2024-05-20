@@ -100,7 +100,6 @@ export function CreateUser() {
                     onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setBio(e.target.value), [bio])}
                 />
             </p>
-            <div>canCreate: {canCreate ? "true" : "false"}</div>
             <button onClick={useCallback(() => navigate("/"), [])}>戻る</button>
             <button disabled={!canCreate} onClick={() => sendRequest(name, password, birthday, bio)}>作成</button>
         </>

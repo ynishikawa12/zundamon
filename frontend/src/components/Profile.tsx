@@ -1,6 +1,7 @@
 import { SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import axios from 'axios';
 import { SERVER_URL, USER_URL } from "../consts/url";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
     userName: string;
@@ -24,13 +25,15 @@ export function Profile({userName}: Props) {
     const [editBirthday, setEditBirthday] = useState<boolean>(false);
     const [editBio, setEditBio] = useState<boolean>(false);
 
+    const navigate = useNavigate();
+
     const sendGetRequest = useCallback((userName: string) => {
         console.log(SERVER_URL + USER_URL + "/" + userName)
         axios.get((SERVER_URL + USER_URL + "/" + userName))
             .then(function (response) {
                 setName(response.data.name);
                 setPassword(response.data.password);
-                setBio(response.data.bio);
+                setBio(response.data.bio.V);
 
                 let stringBirthday = "";
                 if (response.data.birthday.Valid) {
@@ -135,7 +138,8 @@ export function Profile({userName}: Props) {
                 {displayBio}
                 {editButton(setEditBio)}
             </div>
-            <div><button>戻る</button><button>更新</button></div>
+            <button onClick={useCallback(() => navigate("/"), [])}>戻る</button>
+            <button>更新</button>
         </>
     )
 }

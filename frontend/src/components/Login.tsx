@@ -38,6 +38,7 @@ export function Login ({setLoginedUserName}: Props) {
                 alert("ログイン成功");
                 navigate("/profile")
             } else if (response.status != 204) {
+                setLoginFailed(true);
                 console.log("not 204", response.data);
             }
         })
