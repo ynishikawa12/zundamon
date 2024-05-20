@@ -3,7 +3,7 @@ import axios from 'axios';
 import { SERVER_URL, USER_URL } from "../consts/url";
 
 type Props = {
-    username: string;
+    userName: string;
 }
 
 type User = {
@@ -13,7 +13,7 @@ type User = {
     bio: string;
 }
 
-export function Profile({username}: Props) {
+export function Profile({userName}: Props) {
     const [currentUser, setCurrentUser] = useState<User>();
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
@@ -24,9 +24,9 @@ export function Profile({username}: Props) {
     const [editBirthday, setEditBirthday] = useState<boolean>(false);
     const [editBio, setEditBio] = useState<boolean>(false);
 
-    const sendGetRequest = useCallback((username: string) => {
-        console.log(SERVER_URL + USER_URL + "/" + username)
-        axios.get((SERVER_URL + USER_URL + "/" + username))
+    const sendGetRequest = useCallback((userName: string) => {
+        console.log(SERVER_URL + USER_URL + "/" + userName)
+        axios.get((SERVER_URL + USER_URL + "/" + userName))
             .then(function (response) {
                 setName(response.data.name);
                 setPassword(response.data.password);
@@ -50,11 +50,11 @@ export function Profile({username}: Props) {
             .catch(function (error) {
                 console.error(error);
             })
-    }, [username]);
+    }, [userName]);
 
     const sendPatchRequest = useCallback(() => {
 
-    }, [username, password, birthday, bio]);
+    }, [userName, password, birthday, bio]);
 
     // 編集ボタン
     const editButton = useCallback((setState: React.Dispatch<SetStateAction<boolean>>) => {
@@ -114,7 +114,7 @@ export function Profile({username}: Props) {
     }, [editBio, bio])
 
     // ログインユーザーが変わったらプロフィール更新
-    useEffect(() => sendGetRequest(username), [username])
+    useEffect(() => sendGetRequest(userName), [userName])
 
     return (
         <>

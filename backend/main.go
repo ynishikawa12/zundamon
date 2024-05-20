@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"zundamon/consts"
 	"zundamon/db"
 
 	"golang.org/x/crypto/bcrypt"
@@ -20,7 +21,9 @@ type ErrorResponse struct {
 }
 
 func main() {
-	db.InitDB()
+	if err := db.InitDB(); err != nil {
+		log.Fatal(err)
+	}
 	defer db.DB.Close()
 
 	http.HandleFunc("/login", loginHandler)
@@ -31,14 +34,13 @@ func main() {
 }
 
 func validateUser(user db.User) error {
-	const userNameCountLimit = 15
-	if utf8.RuneCountInString(user.Name) > userNameCountLimit {
-		return errors.New("name is too long")
+	if utf8.RuneCountInString(user.Name) > consts.USER_NANE_MAX_LENGTH {
+		return errors.New(consts.NAME_IS_TOO_LONG)
 	}
 
 	const userBioCountLimit = 200
-	if utf8.RuneCountInString(user.Bio) > userBioCountLimit {
-		return errors.New("bio is too long")
+	if utf8.RuneCountInString(user.Bio.V) > userBioCountLimit {
+		return errors.New(consts.BIO_IS_TOO_LONG)
 	}
 
 	return nil
@@ -137,13 +139,13 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user *db.User
+	user := db.User{}
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
 	}
 
-	if err := validateUser(*user); err != nil {
+	if err := validateUser(user); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		log.Println(err)
 		return
@@ -151,6 +153,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
 		log.Println(err)
 		return
 	}
@@ -160,7 +163,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	user.Created_at = now
 	user.Updated_at = now
 
-	if err := db.CreateUser(*user); err != nil {
+	if err := db.CreateUser(user); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		log.Println(err)
 		return

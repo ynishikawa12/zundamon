@@ -1,9 +1,13 @@
-import { useCallback, useMemo, useState } from "react";
+import { SetStateAction, useCallback, useMemo, useState } from "react";
 import axios from 'axios';
 import { SERVER_URL, LOGIN_URL } from "../consts/url";
 import { useNavigate } from "react-router-dom";
 
-export function Login () {
+type Props = {
+    setLoginedUserName: React.Dispatch<SetStateAction<string>>;
+}
+
+export function Login ({setLoginedUserName}: Props) {
     const [userName, setUserName] = useState<string>();
     const [password, setPassowrd] = useState<string>();
     const [loginFailed, setLoginFailed] = useState<boolean>(false);
@@ -30,7 +34,9 @@ export function Login () {
             if (response.status === 204) {
                 // TODO
                 setLoginFailed(false);
+                setLoginedUserName(userName)
                 alert("ログイン成功");
+                navigate("/profile")
             } else if (response.status != 204) {
                 console.log("not 204", response.data);
             }
