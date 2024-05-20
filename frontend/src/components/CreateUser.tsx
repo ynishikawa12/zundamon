@@ -1,29 +1,19 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from 'axios';
 import { SERVER_URL, USER_URL } from "../consts/url";
 import { useNavigate } from "react-router-dom";
+import { USER_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, BIRTHDAY_LENGTH, BIO_MAX_LENGTH, USER_NAME_PATTERN, BIRTHDAY_PATTERN, WARNING_CSS } from "../consts/user";
 
 export function CreateUser() {
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [birthday, setBirthday] = useState<string>("");
     const [bio, setBio] = useState<string>("");
+    const [warningUserName, setWarningUserName] = useState<boolean>(false);
     const [warningBirthday, setWarningBirthday] = useState<boolean>(false);
     
     const navigate = useNavigate();
-    const nameMaxLen = 15;
-    const passwordMaxLen = 10;
-    const birthdayLen = 8;
-    const bioMaxLen = 200;
-
-
-    useEffect(() => {
-        if (birthday.length != birthdayLen) {
-            setWarningBirthday(true);
-        } else {
-            setWarningBirthday(false);
-        }
-    }, [birthday])
+    const canCreate = !warningUserName && !warningBirthday && password
 
     const sendRequest = useCallback((name: string, password: string, birthday: string, bio: string) => {
         const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
@@ -46,64 +36,73 @@ export function CreateUser() {
             })
     }, [name,password, birthday, bio])
 
-    const userNameFilter = "^[a-zA-Z0-9]+$"
-    const filterUserName = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleUserName = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
-        if (value.match(userNameFilter) || value == "") {
-            setName(value)
+        if (!value || !USER_NAME_PATTERN.test(value)) {
+            setWarningUserName(true);
+        } else {
+            setWarningUserName(false);
         }
+        setName(value)
     }, [name])
 
-    const birthdayFilter = "^[0-9]+$"
-    const filterBirthday = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBirthday = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
-        if (value.match(birthdayFilter) || value == "") {
+        if (!value || BIRTHDAY_PATTERN.test(value)) {
             setBirthday(value)
+        }
+
+        if (value.length && value.length != BIRTHDAY_LENGTH) {
+            setWarningBirthday(true);
+        } else {
+            setWarningBirthday(false);
         }
     }, [birthday])
 
     return (
         <>
             <h3>ユーザー作成</h3>
+            {warningUserName && <p style={WARNING_CSS}>半角英数字/{USER_NAME_MAX_LENGTH}文字以下で入力してください</p>}
             <p>ユーザー名：
                 <input 
                     type="text"
                     placeholder="ユーザー名"
-                    maxLength={nameMaxLen}
+                    maxLength={USER_NAME_MAX_LENGTH}
                     value={name}
-                    onChange={filterUserName}
+                    onChange={handleUserName}
                 />
             </p>
             <p>パスワード：
                 <input 
                     type="password"
                     placeholder="パスワード"
-                    maxLength={passwordMaxLen}
+                    maxLength={PASSWORD_MAX_LENGTH}
                     value={password}
                     onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), [password])}
                 />
             </p>
-            {warningBirthday && <p style={{fontSize: "10px", color: "red", margin: "0"}}>8桁を入力してください</p>}
+            {warningBirthday && <p style={WARNING_CSS}>{BIRTHDAY_LENGTH}桁の半角数字を入力してください</p>}
             <p>
                 生年月日（任意）：
                 <input 
                     type="text"
                     placeholder="19900101"
-                    maxLength={birthdayLen}
+                    maxLength={BIRTHDAY_LENGTH}
                     value={birthday}
-                    onChange={filterBirthday}
+                    onChange={handleBirthday}
                 />
             </p>
             <p>
-                自己紹介：
+                自己紹介（任意）：
                 <textarea 
-                    maxLength={bioMaxLen}
+                    maxLength={BIO_MAX_LENGTH}
                     value={bio}
                     onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setBio(e.target.value), [bio])}
                 />
             </p>
+            <div>canCreate: {canCreate ? "true" : "false"}</div>
             <button onClick={useCallback(() => navigate("/"), [])}>戻る</button>
-            <button onClick={() => sendRequest(name, password, birthday, bio)}>作成</button>
+            <button disabled={!canCreate} onClick={() => sendRequest(name, password, birthday, bio)}>作成</button>
         </>
     )
 }
