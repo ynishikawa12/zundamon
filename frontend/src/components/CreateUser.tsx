@@ -17,7 +17,6 @@ export function CreateUser() {
 
     const sendRequest = useCallback((name: string, password: string, birthday: string, bio: string) => {
         const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
-        console.log(date.toISOString())
         const user = {
             Name: name,
             Password: password,
@@ -27,7 +26,6 @@ export function CreateUser() {
 
         axios.post((SERVER_URL + USER_URL), user)
             .then(function (response) {
-                console.log(response)
                 alert("ユーザーを作成しました")
                 navigate("/")
             })
