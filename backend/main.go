@@ -39,7 +39,7 @@ func validateUser(user db.User) error {
 	}
 
 	const userBioCountLimit = 200
-	if utf8.RuneCountInString(user.Bio) > userBioCountLimit {
+	if utf8.RuneCountInString(user.Bio.V) > userBioCountLimit {
 		return errors.New(consts.BIO_IS_TOO_LONG)
 	}
 
