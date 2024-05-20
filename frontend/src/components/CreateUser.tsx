@@ -29,7 +29,6 @@ export function CreateUser() {
 
         axios.post((SERVER_URL + USER_URL), user)
             .then(function (response) {
-                console.log(response)
                 alert("ユーザーを作成しました")
                 navigate("/")
             })

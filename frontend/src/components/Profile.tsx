@@ -18,8 +18,12 @@ type User = {
     bio: string;
 }
 
+interface PatchUser {
+    [prop: string]: any;
+}
+
 export function Profile({loginedUserName}: Props) {
-    const [currentUser, setCurrentUser] = useState<User>();
+    const [currentUser, setCurrentUser] = useState<User>({name: "", password: "", birthday: "", bio: ""});
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [birthday, setBirthday] = useState<string>("");
@@ -62,8 +66,23 @@ export function Profile({loginedUserName}: Props) {
     }, [name]);
 
     const sendPatchRequest = useCallback(() => {
+        const user: PatchUser = {}
+        if (name && name != currentUser.name) {
+            user.Name = name;
+        }
+        if (password && password != currentUser.password) {
+            user.Password = password;
+        }
+        if (birthday != currentUser.birthday) {
+            user.Birthday = birthday === "" ? null : {V: birthday, Valid: true};
+        }
+        if (bio != currentUser.bio) {
+            user.Bio = bio === "" ? null : {V: bio, Valid: true};
+        }
 
-    }, [loginedUserName, password, birthday, bio]);
+        const userJson = JSON.stringify(user);
+        axios.patch((SERVER_URL + USER_URL), userJson)
+    }, [name, password, birthday, bio]);
 
     // 編集ボタン
     const EditButton = useCallback((setState: React.Dispatch<SetStateAction<boolean>>, disabled: boolean) => {
