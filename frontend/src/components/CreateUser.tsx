@@ -22,7 +22,7 @@ export function CreateUser() {
             Name: name,
             Password: password,
             Birthday: birthday === "" ? null : {V: date.toISOString(), Valid: true},
-            Bio: bio,
+            Bio: bio === "" ? null : {V: bio, Valid: true},
         }
 
         axios.post((SERVER_URL + USER_URL), user)

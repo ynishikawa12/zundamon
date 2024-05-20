@@ -120,7 +120,8 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	user.Password = ""
 	if err := json.NewEncoder(w).Encode(user); err != nil {
-		log.Println(err)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		return
 	}
 }
 
