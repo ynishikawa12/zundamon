@@ -2,9 +2,13 @@ import { SetStateAction, useCallback, useEffect, useMemo, useState } from "react
 import axios from 'axios';
 import { SERVER_URL, USER_URL } from "../consts/url";
 import { useNavigate } from "react-router-dom";
+import { InputUserName } from "./inputs/InputUserName";
+import { InputPassword } from "./inputs/InputPassword";
+import { InputBirthday } from "./inputs/InputBirthday";
+import { InputBio } from "./inputs/InputBio";
 
 type Props = {
-    userName: string;
+    loginedUserName: string;
 }
 
 type User = {
@@ -14,16 +18,18 @@ type User = {
     bio: string;
 }
 
-export function Profile({userName}: Props) {
+export function Profile({loginedUserName}: Props) {
     const [currentUser, setCurrentUser] = useState<User>();
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [birthday, setBirthday] = useState<string>("");
     const [bio, setBio] = useState<string>("");
-    const [editName, setEditName] = useState<boolean>(false);
-    const [editPassword, setEditPassword] = useState<boolean>(false);
-    const [editBirthday, setEditBirthday] = useState<boolean>(false);
-    const [editBio, setEditBio] = useState<boolean>(false);
+    const [warningName, setWarningName] = useState<boolean>(false);
+    const [warningBirthday, setWarningBirthday] = useState<boolean>(false);
+    const [canEditName, setCanEditName] = useState<boolean>(false);
+    const [canEditPassword, setCanEditPassword] = useState<boolean>(false);
+    const [canEditBirthday, setCanEditBirthday] = useState<boolean>(false);
+    const [canEditBio, setCanEditBio] = useState<boolean>(false);
 
     const navigate = useNavigate();
 
@@ -47,99 +53,74 @@ export function Profile({userName}: Props) {
                     name: response.data.name,
                     password: response.data.password,
                     birthday: stringBirthday,
-                    bio: response.data.bio,
+                    bio: response.data.bio.V,
                 })
             })
             .catch(function (error) {
                 console.error(error);
             })
-    }, [userName]);
+    }, [name]);
 
     const sendPatchRequest = useCallback(() => {
 
-    }, [userName, password, birthday, bio]);
+    }, [loginedUserName, password, birthday, bio]);
 
     // 編集ボタン
-    const editButton = useCallback((setState: React.Dispatch<SetStateAction<boolean>>) => {
-        return <button onClick={() => setState((bool) => !bool)}><img src="src/assets/pencil.svg" height={20} width={20} alt="edit" /></button>
+    const EditButton = useCallback((setState: React.Dispatch<SetStateAction<boolean>>, disabled: boolean) => {
+        return <button disabled={disabled} onClick={() => setState((bool) => !bool)}><img src="src/assets/pencil.svg" height={20} width={20} alt="edit" /></button>
     },[])
 
-    const displayUser = useMemo(() => {
-        return (editName ? 
-            <input 
-            type="text"
-            placeholder="ユーザー名"
-            maxLength={15}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            /> :
-            <>{name}</>
+    const DisplayUser = useMemo(() => {
+        return (canEditName ? 
+            <InputUserName value={name} setValue={setName} warning={warningName} setWarning={setWarningName} /> :
+            <>ユーザー名：{name}</>
         )
-    }, [editName, name])
+    }, [canEditName, name])
 
-    const displayPassword = useMemo(() => {
-        return (editPassword ?
-            <input 
-                type="password"
-                placeholder="パスワード"
-                maxLength={10}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-            /> :
-            <>
-                {password === "" ? "****" : password} 
-            </>
+    const DisplayPassword = useMemo(() => {
+        return (canEditPassword ?
+            <InputPassword value={password} setValue={setPassword} /> :
+            <>パスワード：{password}</>
         )
-    }, [editPassword, password])
+    }, [canEditPassword, password])
 
-    const displayBirthday = useMemo(() => {
-        return (editBirthday || birthday === "" ?
-            <input 
-                type="text"
-                placeholder="19900101"
-                maxLength={8}
-                value={birthday}
-                onChange={(e) => setBirthday((e.target.value.replace(/[^0-9]/g, '')))}
-            /> :
-            <>{birthday}</>
+    const DisplayBirthday = useMemo(() => {
+        return (canEditBirthday ?
+            <InputBirthday value={birthday} setValue={setBirthday} warning={warningBirthday} setWarning={setWarningBirthday}/> :
+            <>生年月日（任意）：{birthday}</>
         )
-    }, [editBirthday, birthday])
+    }, [canEditBirthday, birthday])
 
-    const displayBio = useMemo(() => {
-        return (editBio ?
-            <textarea 
-                maxLength={200}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-            /> :
-            <>{bio}</>
+    const DisplayBio = useMemo(() => {
+        return (canEditBio ?
+            <InputBio value={bio} setValue={setBio} /> :
+            <>自己紹介（任意）：{bio}</>
         )
-    }, [editBio, bio])
+    }, [canEditBio, bio])
 
-    // ログインユーザーが変わったらプロフィール更新
-    useEffect(() => sendGetRequest(userName), [userName])
+    useEffect(() => sendGetRequest(loginedUserName), [loginedUserName])
 
     return (
         <>
             <h3>プロフィール</h3>
-            <div>ユーザー名：
-                {displayUser}
-                {editButton(setEditName)}
+            <div>
+                {DisplayUser}
+                {EditButton(setCanEditName, canEditName && warningName)}
             </div>
-            <div>パスワード：
-                {displayPassword}
-                {editButton(setEditPassword)}
+            <div>
+                {DisplayPassword}
+                {EditButton(setCanEditPassword, canEditPassword && false)}
             </div>
-            <div>生年月日（任意）：
-                {displayBirthday}
-                {editButton(setEditBirthday)}
+            <div>
+                {DisplayBirthday}
+                {EditButton(setCanEditBirthday, canEditBirthday && warningBirthday)}
             </div>
-            <div>自己紹介：
-                {displayBio}
-                {editButton(setEditBio)}
+            <div>
+                {DisplayBio}
+                {EditButton(setCanEditBio, false)}
             </div>
             <button onClick={useCallback(() => navigate("/"), [])}>戻る</button>
-            <button>更新</button>
+            <button disabled={warningName || warningBirthday}>更新</button>
         </>
     )
 }
