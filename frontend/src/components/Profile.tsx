@@ -12,6 +12,7 @@ type Props = {
 }
 
 type User = {
+    id: number;
     name: string;
     password: string;
     birthday: string;
@@ -23,7 +24,8 @@ interface PatchUser {
 }
 
 export function Profile({loginedUserName}: Props) {
-    const [currentUser, setCurrentUser] = useState<User>({name: "", password: "", birthday: "", bio: ""});
+    const [currentUser, setCurrentUser] = useState<User>({id: 0, name: "", password: "", birthday: "", bio: ""})
+    const [id, setId] = useState<number>();
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [birthday, setBirthday] = useState<string>("");
@@ -41,6 +43,7 @@ export function Profile({loginedUserName}: Props) {
         console.log(SERVER_URL + USER_URL + "/" + userName)
         axios.get((SERVER_URL + USER_URL + "/" + userName))
             .then(function (response) {
+                setId(response.data.id);
                 setName(response.data.name);
                 setPassword(response.data.password);
                 setBio(response.data.bio.V);
@@ -54,8 +57,9 @@ export function Profile({loginedUserName}: Props) {
                 }
 
                 setCurrentUser({
+                    id: response.data.id,
                     name: response.data.name,
-                    password: response.data.password,
+                    password: "",
                     birthday: stringBirthday,
                     bio: response.data.bio.V,
                 })
@@ -67,21 +71,35 @@ export function Profile({loginedUserName}: Props) {
 
     const sendPatchRequest = useCallback(() => {
         const user: PatchUser = {}
-        if (name && name != currentUser.name) {
+        user.Id = id;
+        if (currentUser.name !== name) {
             user.Name = name;
         }
-        if (password && password != currentUser.password) {
+        if (password) {
             user.Password = password;
         }
-        if (birthday != currentUser.birthday) {
-            user.Birthday = birthday === "" ? null : {V: birthday, Valid: true};
+        if (currentUser.birthday != birthday) {
+            if (birthday) {
+                console.log(1)
+                const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
+                user.Birthday = {V: date.toISOString(), Valid: true}
+            } else {
+                console.log(2, user.birthday)
+                user.Birthday = {V: null, Valid: true};
+            }
         }
-        if (bio != currentUser.bio) {
-            user.Bio = bio === "" ? null : {V: bio, Valid: true};
+        if (currentUser.bio != bio) {
+            user.Bio = {V: bio, Valid: true};
         }
-
+        
         const userJson = JSON.stringify(user);
         axios.patch((SERVER_URL + USER_URL), userJson)
+            .then(function (response) {
+                alert("ユーザーを更新しました")
+            })
+            .catch(function (error) {
+                console.error(error);
+            })
     }, [name, password, birthday, bio]);
 
     // 編集ボタン
@@ -139,7 +157,7 @@ export function Profile({loginedUserName}: Props) {
                 {EditButton(setCanEditBio, false)}
             </div>
             <button onClick={useCallback(() => navigate("/"), [])}>戻る</button>
-            <button disabled={warningName || warningBirthday}>更新</button>
+            <button disabled={warningName || warningBirthday} onClick={sendPatchRequest}>更新</button>
         </>
     )
 }

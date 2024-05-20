@@ -12,7 +12,7 @@ export default function App() {
     <Routes>
         <Route path="/" element={ <Login setLoginedUserName={setLoginedUserName}/> } />
         <Route path="/createUser" element={ <CreateUser /> } />
-        <Route path="/profile" element={ <Profile userName={loginedUserName} /> } />
+        <Route path="/profile" element={ <Profile loginedUserName={loginedUserName} /> } />
     </Routes>
     </>
   )

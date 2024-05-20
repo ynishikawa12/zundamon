@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"zundamon/consts"
 	"zundamon/db"
 
+	"github.com/rs/cors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,11 +28,15 @@ func main() {
 	}
 	defer db.DB.Close()
 
-	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/users", createUserHandler)
-	http.HandleFunc("/users/{name}", getUserHandler)
+	mux := http.NewServeMux()
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	mux.HandleFunc("POST /login", loginHandler)
+	mux.HandleFunc("POST /users", createUserHandler)
+	mux.HandleFunc("PATCH /users", patchUserHandler)
+	mux.HandleFunc("GET /users/{name}", getUserHandler)
+
+	handler := cors.AllowAll().Handler(mux)
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
 func validateUser(user db.User) error {
@@ -57,20 +63,6 @@ func writeResponse(w http.ResponseWriter, code int, body any) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	headers := map[string]string{
-		"Access-Control-Allow-Origin":  "http://localhost:5173",
-		"Access-Control-Allow-Headers": "*",
-		"Access-Control-Allow-Methods": "POST",
-	}
-
-	for k, v := range headers {
-		w.Header().Set(k, v)
-	}
-
-	if r.Method == "OPTIONS" {
-		return
-	}
-
 	auth := r.Header.Get("Authorization")
 	decoded, err := base64.StdEncoding.DecodeString(auth)
 	if err != nil {
@@ -97,20 +89,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserHandler(w http.ResponseWriter, r *http.Request) {
-	headers := map[string]string{
-		"Access-Control-Allow-Origin":  "http://localhost:5173",
-		"Access-Control-Allow-Headers": "*",
-		"Access-Control-Allow-Methods": "GET",
-	}
-
-	for k, v := range headers {
-		w.Header().Set(k, v)
-	}
-
-	if r.Method == "OPTIONS" {
-		return
-	}
-
 	user, err := db.GetUserByName(r.PathValue("name"))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
@@ -124,20 +102,6 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
-	headers := map[string]string{
-		"Access-Control-Allow-Origin":  "http://localhost:5173",
-		"Access-Control-Allow-Headers": "*",
-		"Access-Control-Allow-Methods": "POST",
-	}
-
-	for k, v := range headers {
-		w.Header().Set(k, v)
-	}
-
-	if r.Method == "OPTIONS" {
-		return
-	}
-
 	user := db.User{}
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
@@ -169,4 +133,55 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func patchUserHandler(w http.ResponseWriter, r *http.Request) {
+	user := db.User{}
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		log.Println(err)
+		return
+	}
+
+	if err := validateUser(user); err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
+	patchMap := map[string]any{}
+	if user.Name != "" {
+		patchMap["name"] = user.Name
+	}
+	if user.Password != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+		if err != nil {
+			writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+			log.Println(err)
+			return
+		}
+		patchMap["password"] = string(hashed)
+	}
+	if user.Birthday.Valid {
+		if user.Birthday.V.IsZero() {
+			patchMap["birthday"] = sql.Null[time.Time]{}
+		} else {
+			patchMap["birthday"] = user.Birthday
+		}
+
+	}
+	if user.Bio.Valid {
+		if user.Bio.V == "" {
+			patchMap["bio"] = sql.Null[string]{V: "", Valid: false}
+		} else {
+			patchMap["bio"] = user.Bio
+		}
+
+	}
+	patchMap["updated_at"] = time.Now()
+
+	if err := db.PatchUser(user.Id, patchMap); err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
 }
