@@ -1,19 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import axios from 'axios';
 import { SERVER_URL, USER_URL } from "../consts/url";
 import { useNavigate } from "react-router-dom";
-import { USER_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, BIRTHDAY_LENGTH, BIO_MAX_LENGTH, USER_NAME_PATTERN, BIRTHDAY_PATTERN, WARNING_CSS } from "../consts/user";
+import { USER_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, BIRTHDAY_LENGTH, BIO_MAX_LENGTH, USER_NAME_PATTERN, BIRTHDAY_PATTERN } from "../consts/user";
+import { FormErrorMessage } from "./forms/FormErrorMessage";
 
 export function CreateUser() {
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [birthday, setBirthday] = useState<string>("");
     const [bio, setBio] = useState<string>("");
-    const [warningUserName, setWarningUserName] = useState<boolean>(false);
-    const [warningBirthday, setWarningBirthday] = useState<boolean>(false);
+    const [showUserNameErrorMessage, setShowUserNameErrorMessage] = useState<boolean>(false);
+    const [showBirthdayErrorMessage, setShowBirthdayErrorMessage] = useState<boolean>(false);
     
     const navigate = useNavigate();
-    const canCreate = !warningUserName && !warningBirthday && password
+    const canCreate = !showUserNameErrorMessage && !showBirthdayErrorMessage && password
 
     const sendRequest = useCallback((name: string, password: string, birthday: string, bio: string) => {
         const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
@@ -37,9 +38,9 @@ export function CreateUser() {
     const handleUserName = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
         if (!value || !USER_NAME_PATTERN.test(value)) {
-            setWarningUserName(true);
+            setShowUserNameErrorMessage(true);
         } else {
-            setWarningUserName(false);
+            setShowUserNameErrorMessage(false);
         }
         setName(value)
     }, [name])
@@ -51,16 +52,16 @@ export function CreateUser() {
         }
 
         if (value.length && value.length != BIRTHDAY_LENGTH) {
-            setWarningBirthday(true);
+            setShowBirthdayErrorMessage(true);
         } else {
-            setWarningBirthday(false);
+            setShowBirthdayErrorMessage(false);
         }
     }, [birthday])
 
     return (
         <>
             <h3>ユーザー作成</h3>
-            {warningUserName && <p style={WARNING_CSS}>半角英数字/{USER_NAME_MAX_LENGTH}文字以下で入力してください</p>}
+            {showUserNameErrorMessage && <FormErrorMessage message={USER_NAME_MAX_LENGTH + "以下で入力してください"}/>}
             <p>ユーザー名：
                 <input 
                     type="text"
@@ -79,7 +80,7 @@ export function CreateUser() {
                     onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), [password])}
                 />
             </p>
-            {warningBirthday && <p style={WARNING_CSS}>{BIRTHDAY_LENGTH}桁の半角数字を入力してください</p>}
+            {showBirthdayErrorMessage && <FormErrorMessage message={BIRTHDAY_LENGTH + "桁の半角数字を入力してください"} />}
             <p>
                 生年月日（任意）：
                 <input 

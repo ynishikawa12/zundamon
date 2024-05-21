@@ -4,4 +4,3 @@ export const BIRTHDAY_LENGTH = 8;
 export const BIO_MAX_LENGTH = 200;
 export const USER_NAME_PATTERN = /^[a-zA-Z0-9]+$/;
 export const BIRTHDAY_PATTERN = /^[0-9]+$/;
-export const WARNING_CSS = {fontSize: "10px", color: "red", margin: "0"}

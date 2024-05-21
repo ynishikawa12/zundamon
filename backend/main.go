@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -12,6 +11,7 @@ import (
 
 	"zundamon/consts"
 	"zundamon/db"
+	"zundamon/errors"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -35,13 +35,12 @@ func main() {
 
 func validateUser(user db.User) error {
 	if utf8.RuneCountInString(user.Name) > consts.USER_NANE_MAX_LENGTH {
-		return errors.New(consts.NAME_IS_TOO_LONG)
+		return errors.NameIsTooLong
 	}
 
 	if utf8.RuneCountInString(user.Bio.V) > consts.USER_BIO_MAX_LENGTH {
-		return errors.New(consts.BIO_IS_TOO_LONG)
+		return errors.BioIsTooLong
 	}
-
 	return nil
 }
 
@@ -139,7 +138,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := db.User{}
+	var user db.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
