@@ -102,7 +102,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
-	user := db.User{}
+	var user db.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
@@ -136,7 +136,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func patchUserHandler(w http.ResponseWriter, r *http.Request) {
-	user := db.User{}
+	var user db.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
