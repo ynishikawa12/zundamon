@@ -8,13 +8,13 @@ import (
 )
 
 type User struct {
-	Id        int                 `json:"id"`
-	Name      string              `json:"name"`
-	Password  string              `json:"password"`
-	Birthday  sql.Null[time.Time] `json:"birthday"`
-	Bio       sql.Null[string]    `json:"bio"`
-	CreatedAt time.Time           `json:"created_at"`
-	UpdatedAt time.Time           `json:"updated_at"`
+	Id        int
+	Name      string
+	Password  string
+	Birthday  sql.Null[time.Time]
+	Bio       sql.Null[string]
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 var DB *sql.DB

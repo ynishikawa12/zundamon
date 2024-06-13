@@ -5,6 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { USER_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, BIRTHDAY_LENGTH, BIO_MAX_LENGTH, USER_NAME_PATTERN, BIRTHDAY_PATTERN } from "../consts/user";
 import { FormErrorMessage } from "./forms/FormErrorMessage";
 
+interface User {
+    Name: string,
+    Password: string,
+    Bio?: string,
+    Birthday?: Date,
+}
+
 export function CreateUser() {
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
@@ -17,12 +24,16 @@ export function CreateUser() {
     const canCreate = !showUserNameErrorMessage && !showBirthdayErrorMessage && password
 
     const sendRequest = useCallback((name: string, password: string, birthday: string, bio: string) => {
-        const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
-        const user = {
+        const user: User = {
             Name: name,
             Password: password,
-            Birthday: birthday === "" ? null : {V: date.toISOString(), Valid: true},
-            Bio: bio === "" ? null : {V: bio, Valid: true},
+        }
+        if (bio) {
+            user.Bio = bio;
+        }
+        if (birthday) {
+            const date = Date.parse(birthday);
+            user.Birthday = new Date(date)
         }
 
         axios.post((SERVER_URL + USER_URL), user)
@@ -47,16 +58,18 @@ export function CreateUser() {
 
     const handleBirthday = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
-        if (!value || BIRTHDAY_PATTERN.test(value)) {
-            setBirthday(value)
-        }
-
+        setBirthday(value);
         if (value.length && value.length != BIRTHDAY_LENGTH) {
             setShowBirthdayErrorMessage(true);
         } else {
             setShowBirthdayErrorMessage(false);
         }
     }, [birthday])
+
+    const handleChangePassword = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), [password])
+    const handleChangeBio = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setBio(e.target.value), [bio])
+    const handlePushBack = useCallback(() => navigate("/"), [])
+    const handleSendRequest = useCallback(() => sendRequest(name, password, birthday, bio), [name, password, birthday, bio])
 
     return (
         <>
@@ -77,7 +90,7 @@ export function CreateUser() {
                     placeholder="パスワード"
                     maxLength={PASSWORD_MAX_LENGTH}
                     value={password}
-                    onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value), [password])}
+                    onChange={handleChangePassword}
                 />
             </p>
             {showBirthdayErrorMessage && <FormErrorMessage message={BIRTHDAY_LENGTH + "桁の半角数字を入力してください"} />}
@@ -85,6 +98,7 @@ export function CreateUser() {
                 生年月日（任意）：
                 <input 
                     type="text"
+                    pattern="^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
                     placeholder="19900101"
                     maxLength={BIRTHDAY_LENGTH}
                     value={birthday}
@@ -96,11 +110,11 @@ export function CreateUser() {
                 <textarea 
                     maxLength={BIO_MAX_LENGTH}
                     value={bio}
-                    onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setBio(e.target.value), [bio])}
+                    onChange={handleChangeBio}
                 />
             </p>
-            <button onClick={useCallback(() => navigate("/"), [])}>戻る</button>
-            <button disabled={!canCreate} onClick={() => sendRequest(name, password, birthday, bio)}>作成</button>
+            <button onClick={handlePushBack}>戻る</button>
+            <button disabled={!canCreate} onClick={handleSendRequest}>作成</button>
         </>
     )
 }

@@ -12,7 +12,7 @@ func GetUserByName(name string) (User, error) {
 }
 
 func CreateUser(user User) error {
-	sql := "INSERT INTO users (name, password, birthday, bio, createdAt, updatedAt) VALUES(?, ?, ?, ?, ?, ?)"
+	sql := "INSERT INTO users (name, password, birthday, bio, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?)"
 	ins, err := DB.Prepare(sql)
 	if err != nil {
 		return err

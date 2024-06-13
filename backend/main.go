@@ -12,6 +12,9 @@ import (
 	"zundamon/consts"
 	"zundamon/db"
 	"zundamon/errors"
+	"zundamon/model"
+
+	"database/sql"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -33,13 +36,13 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func validateUser(user db.User) error {
+func validateUser(user model.User) error {
 	if utf8.RuneCountInString(user.Name) > consts.USER_NANE_MAX_LENGTH {
-		return errors.NameIsTooLong
+		return errors.ErrorNameIsTooLong
 	}
 
-	if utf8.RuneCountInString(user.Bio.V) > consts.USER_BIO_MAX_LENGTH {
-		return errors.BioIsTooLong
+	if user.Bio != nil && utf8.RuneCountInString(*user.Bio) > consts.USER_BIO_MAX_LENGTH {
+		return errors.ErrorBioIsTooLong
 	}
 	return nil
 }
@@ -138,7 +141,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user db.User
+	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
@@ -156,13 +159,30 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	user.Password = string(hashed)
+
+	var birthday sql.Null[time.Time]
+	if user.Birthday != nil {
+		birthday.V = *user.Birthday
+		birthday.Valid = true
+	}
+
+	var bio sql.Null[string]
+	if user.Bio != nil {
+		bio.V = *user.Bio
+		birthday.Valid = true
+	}
 
 	now := time.Now()
-	user.CreatedAt = now
-	user.UpdatedAt = now
+	dbUser := db.User{
+		Name:      user.Name,
+		Password:  string(hashed),
+		Birthday:  birthday,
+		Bio:       bio,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
 
-	if err := db.CreateUser(user); err != nil {
+	if err := db.CreateUser(dbUser); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		log.Println(err)
 		return
