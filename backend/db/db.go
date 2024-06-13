@@ -2,28 +2,27 @@ package db
 
 import (
 	"database/sql"
-	"log"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
 )
 
 type User struct {
-	Id         int                 `json:"id"`
-	Name       string              `json:"name"`
-	Password   string              `json:"password"`
-	Birthday   sql.Null[time.Time] `json:"birthday"`
-	Bio        string              `json:"bio"`
-	Created_at time.Time           `json:"created_at"`
-	Updated_at time.Time           `json:"updated_at"`
+	Id        int
+	Name      string
+	Password  string
+	Birthday  sql.Null[time.Time]
+	Bio       sql.Null[string]
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
-var sqlDB *sql.DB
+var DB *sql.DB
 
-func ConnectDB() (db *sql.DB, err error) {
+func InitDB() error {
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		return db, err
+		return err
 	}
 
 	c := mysql.Config{
@@ -37,22 +36,11 @@ func ConnectDB() (db *sql.DB, err error) {
 		Loc:       jst,
 	}
 
-	db, err = sql.Open("mysql", c.FormatDSN())
-	if err != nil {
-		return db, err
+	var error error
+	DB, error = sql.Open("mysql", c.FormatDSN())
+	if error != nil {
+		return error
 	}
 
-	return db, err
-}
-
-func InitDB() {
-	var err error
-	sqlDB, err = ConnectDB()
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func GetDB() (db *sql.DB) {
-	return sqlDB
+	return nil
 }

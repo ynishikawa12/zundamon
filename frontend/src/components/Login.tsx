@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 import axios from 'axios';
 import { SERVER_URL, LOGIN_URL } from "../consts/url";
+import { useNavigate } from "react-router-dom";
 
 export function Login () {
     const [userName, setUserName] = useState<string>();
     const [password, setPassowrd] = useState<string>();
     const [loginFailed, setLoginFailed] = useState<boolean>(false);
+    const navigate = useNavigate()
     
     const LoginButton = useMemo(() => {
         const canSubmit = userName && password;
@@ -37,8 +39,17 @@ export function Login () {
         })
     },[userName, password])
 
+    const userNameFilter = "^[a-zA-Z0-9]+$"
+    const filterUserName = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value
+        if (value.match(userNameFilter) || value == "") {
+            setUserName(value)
+        }
+    }, [name])
+
     return (
         <>
+            <h3>ログイン</h3>
             {loginFailed && <p style={{color: "red"}}>ログインに失敗しました</p>}
             <p>ユーザー名：
                 <input 
@@ -46,7 +57,7 @@ export function Login () {
                     placeholder="ユーザー名"
                     maxLength={15}
                     value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
+                    onChange={filterUserName}
                 />  
             </p>
             <p>パスワード：
@@ -55,10 +66,11 @@ export function Login () {
                     placeholder="パスワード"
                     maxLength={10}
                     value={password}
-                    onChange={(e) => setPassowrd(e.target.value)}
+                    onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => setPassowrd(e.target.value), [password])}
                 /> 
             </p>
             {LoginButton}
+            <button onClick={useCallback(() => navigate("/createUser"), [])}>ユーザー作成</button>
         </>
     )
 }
