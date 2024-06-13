@@ -5,10 +5,10 @@ import { Route, Routes } from "react-router-dom"
 export default function App() {
   return (
     <>
-    <Routes>
+      <Routes>
         <Route path="/" element={ <Login /> } />
         <Route path="/createUser" element={ <CreateUser /> } />
-    </Routes>
+      </Routes>
     </>
   )
 }
