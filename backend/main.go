@@ -159,8 +159,8 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	user.Password = string(hashed)
 
 	now := time.Now()
-	user.Created_at = now
-	user.Updated_at = now
+	user.CreatedAt = now
+	user.UpdatedAt = now
 
 	if err := db.CreateUser(user); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
