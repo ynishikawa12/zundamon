@@ -1,15 +1,18 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"zundamon/errors"
+	"zundamon/model"
+
+	"database/sql"
 
 	"zundamon/consts"
 	"zundamon/db"
@@ -39,18 +42,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
-func validateUser(user db.User) error {
-	if utf8.RuneCountInString(user.Name) > consts.USER_NANE_MAX_LENGTH {
-		return errors.New(consts.NAME_IS_TOO_LONG)
-	}
-
-	if utf8.RuneCountInString(user.Bio.V) > consts.USER_BIO_MAX_LENGTH {
-		return errors.New(consts.BIO_IS_TOO_LONG)
-	}
-
-	return nil
-}
-
 func newErrorResponse(err error) ErrorResponse {
 	return ErrorResponse{Error: err.Error()}
 }
@@ -60,6 +51,17 @@ func writeResponse(w http.ResponseWriter, code int, body any) {
 		log.Println(err)
 	}
 	w.WriteHeader(code)
+}
+
+func validateUser(user model.User) error {
+	if utf8.RuneCountInString(user.Name) > consts.USER_NANE_MAX_LENGTH {
+		return errors.ErrorNameIsTooLong
+	}
+
+	if user.Bio != nil && utf8.RuneCountInString(*user.Bio) > consts.USER_BIO_MAX_LENGTH {
+		return errors.ErrorBioIsTooLong
+	}
+	return nil
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -97,12 +99,13 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	user.Password = ""
 	if err := json.NewEncoder(w).Encode(user); err != nil {
-		log.Println(err)
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		return
 	}
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
-	var user db.User
+	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
@@ -120,13 +123,30 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	user.Password = string(hashed)
+
+	var birthday sql.Null[time.Time]
+	if user.Birthday != nil {
+		birthday.V = *user.Birthday
+		birthday.Valid = true
+	}
+
+	var bio sql.Null[string]
+	if user.Bio != nil {
+		bio.V = *user.Bio
+		birthday.Valid = true
+	}
 
 	now := time.Now()
-	user.Created_at = now
-	user.Updated_at = now
+	dbUser := db.User{
+		Name:      user.Name,
+		Password:  string(hashed),
+		Birthday:  birthday,
+		Bio:       bio,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
 
-	if err := db.CreateUser(user); err != nil {
+	if err := db.CreateUser(dbUser); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		log.Println(err)
 		return
@@ -136,7 +156,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func patchUserHandler(w http.ResponseWriter, r *http.Request) {
-	var user db.User
+	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
@@ -161,27 +181,27 @@ func patchUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		patchMap["password"] = string(hashed)
 	}
-	if user.Birthday.Valid {
-		if user.Birthday.V.IsZero() {
-			patchMap["birthday"] = sql.Null[time.Time]{}
-		} else {
-			patchMap["birthday"] = user.Birthday
-		}
+	//if user.Birthday.Valid {
+	//	if user.Birthday.V.IsZero() {
+	//		patchMap["birthday"] = sql.Null[time.Time]{}
+	//	} else {
+	//		patchMap["birthday"] = user.Birthday
+	//	}
 
-	}
-	if user.Bio.Valid {
-		if user.Bio.V == "" {
-			patchMap["bio"] = sql.Null[string]{V: "", Valid: false}
-		} else {
-			patchMap["bio"] = user.Bio
-		}
+	//}
+	//if user.Bio.Valid {
+	//	if user.Bio.V == "" {
+	//		patchMap["bio"] = sql.Null[string]{V: "", Valid: false}
+	//	} else {
+	//		patchMap["bio"] = user.Bio
+	//	}
 
-	}
-	patchMap["updated_at"] = time.Now()
+	//}
+	//patchMap["updated_at"] = time.Now()
 
-	if err := db.PatchUser(user.Id, patchMap); err != nil {
-		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
-		log.Println(err)
-		return
-	}
+	//if err := db.PatchUser(user.Id, patchMap); err != nil {
+	//	writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+	//	log.Println(err)
+	//	return
+	//}
 }

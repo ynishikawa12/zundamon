@@ -5,7 +5,7 @@ import "strconv"
 func GetUserByName(name string) (User, error) {
 	var user User
 	sql := "SELECT * FROM users WHERE name = ?;"
-	err := DB.QueryRow(sql, name).Scan(&user.Id, &user.Name, &user.Password, &user.Birthday, &user.Bio, &user.Created_at, &user.Updated_at)
+	err := DB.QueryRow(sql, name).Scan(&user.Id, &user.Name, &user.Password, &user.Birthday, &user.Bio, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return user, err
 	}
@@ -20,7 +20,7 @@ func CreateUser(user User) error {
 		return err
 	}
 
-	_, err = ins.Exec(user.Name, user.Password, user.Birthday, user.Bio, user.Created_at, user.Updated_at)
+	_, err = ins.Exec(user.Name, user.Password, user.Birthday, user.Bio, user.CreatedAt, user.UpdatedAt)
 	if err != nil {
 		return err
 	}

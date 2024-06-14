@@ -11,10 +11,7 @@ type Props = {
 export function InputBirthday({value, setValue, warning, setWarning}: Props) {
     const handle = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
-        if (!value || BIRTHDAY_PATTERN.test(value)) {
-            setValue(value)
-        }
-
+        setValue(value);
         if (value.length && value.length != BIRTHDAY_LENGTH) {
             setWarning(true);
         } else {
@@ -29,6 +26,7 @@ export function InputBirthday({value, setValue, warning, setWarning}: Props) {
                 生年月日（任意）：
                 <input 
                     type="text"
+                    pattern="^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
                     placeholder="19900101"
                     maxLength={BIRTHDAY_LENGTH}
                     value={value}

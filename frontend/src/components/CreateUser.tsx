@@ -7,24 +7,35 @@ import { InputPassword } from "./inputs/InputPassword";
 import { InputBirthday } from "./inputs/InputBirthday";
 import { InputBio } from "./inputs/InputBio";
 
+interface User {
+    Name: string,
+    Password: string,
+    Bio?: string,
+    Birthday?: Date,
+}
+
 export function CreateUser() {
     const [name, setName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [birthday, setBirthday] = useState<string>("");
     const [bio, setBio] = useState<string>("");
-    const [warningUserName, setWarningUserName] = useState<boolean>(false);
-    const [warningBirthday, setWarningBirthday] = useState<boolean>(false);
+    const [showUserNameErrorMessage, setShowUserNameErrorMessage] = useState<boolean>(false);
+    const [showBirthdayErrorMessage, setShowBirthdayErrorMessage] = useState<boolean>(false);
     
     const navigate = useNavigate();
-    const canCreate = !warningUserName && !warningBirthday && password
+    const canCreate = !showUserNameErrorMessage && !showBirthdayErrorMessage && password
 
     const sendRequest = useCallback((name: string, password: string, birthday: string, bio: string) => {
-        const date = new Date(Number(birthday.substring(0, 4)), Number(birthday.substring(4, 6)) - 1, Number(birthday.substring(6, 8)))
-        const user = {
+        const user: User = {
             Name: name,
             Password: password,
-            Birthday: birthday === "" ? null : {V: date.toISOString(), Valid: true},
-            Bio: bio === "" ? null : {V: bio, Valid: true},
+        }
+        if (bio) {
+            user.Bio = bio;
+        }
+        if (birthday) {
+            const date = Date.parse(birthday);
+            user.Birthday = new Date(date)
         }
 
         axios.post((SERVER_URL + USER_URL), user)
@@ -37,15 +48,18 @@ export function CreateUser() {
             })
     }, [name,password, birthday, bio])
 
+    const handlePushBack = useCallback(() => navigate("/"), [])
+    const handleSendRequest = useCallback(() => sendRequest(name, password, birthday, bio), [name, password, birthday, bio])
+
     return (
         <>
             <h3>ユーザー作成</h3>
-            <InputUserName value={name} setValue={setName} warning={warningUserName} setWarning={setWarningUserName} />
+            <InputUserName value={name} setValue={setName} warning={showUserNameErrorMessage} setWarning={setShowUserNameErrorMessage} />
             <InputPassword value={password} setValue={setPassword} />
-            <InputBirthday value={birthday} setValue={setBirthday} warning={warningBirthday} setWarning={setWarningBirthday} />
+            <InputBirthday value={birthday} setValue={setBirthday} warning={showBirthdayErrorMessage} setWarning={setShowBirthdayErrorMessage} />
             <InputBio value={bio} setValue={setBio} />
-            <button onClick={useCallback(() => navigate("/"), [])}>戻る</button>
-            <button disabled={!canCreate} onClick={() => sendRequest(name, password, birthday, bio)}>作成</button>
+            <button onClick={handlePushBack}>戻る</button>
+            <button disabled={!canCreate} onClick={handleSendRequest}>作成</button>
         </>
     )
 }
