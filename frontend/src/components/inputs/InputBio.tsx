@@ -1,12 +1,12 @@
-import { SetStateAction, useCallback } from "react";
+import { useCallback } from "react";
 import { BIO_MAX_LENGTH } from "../../consts/user";
 
 type Props = {
     value: string;
-    setValue: React.Dispatch<SetStateAction<string>>
+    onChange: (value: string) => void;
 }
 
-export function InputBio({value, setValue}: Props) {
+export function InputBio({value, onChange}: Props) {
     return (
         <>
             <p>
@@ -14,7 +14,7 @@ export function InputBio({value, setValue}: Props) {
                 <textarea 
                     maxLength={BIO_MAX_LENGTH}
                     value={value}
-                    onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setValue(e.target.value), [value])}
+                    onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value), [value])}
                 />
             </p>
         </>

@@ -54,9 +54,9 @@ export function CreateUser() {
     return (
         <>
             <h3>ユーザー作成</h3>
-            <InputUserName value={name} setValue={setName} warning={showUserNameErrorMessage} setWarning={setShowUserNameErrorMessage} />
-            <InputPassword value={password} setValue={setPassword} />
-            <InputBirthday value={birthday} setValue={setBirthday} warning={showBirthdayErrorMessage} setWarning={setShowBirthdayErrorMessage} />
+            <InputUserName value={name} onChange={setName} warning={showUserNameErrorMessage} handleSetWarning={setShowUserNameErrorMessage} />
+            <InputPassword value={password} onChange={setPassword} />
+            <InputBirthday value={birthday} onChange={setBirthday} warning={showBirthdayErrorMessage} handleSetWarning={setShowBirthdayErrorMessage} />
             <InputBio value={bio} setValue={setBio} />
             <button onClick={handlePushBack}>戻る</button>
             <button disabled={!canCreate} onClick={handleSendRequest}>作成</button>

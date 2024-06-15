@@ -3,12 +3,12 @@ import { USER_NAME_MAX_LENGTH, USER_NAME_PATTERN, WARNING_CSS } from "../../cons
 
 type Props = {
     value: string;
-    setValue: React.Dispatch<SetStateAction<string>>;
+    onChange: (value: string) => void;
     warning: boolean;
-    setWarning: React.Dispatch<SetStateAction<boolean>>
+    handleSetWarning: React.Dispatch<SetStateAction<boolean>>
 }
 
-export function InputUserName({value, setValue, warning, setWarning}: Props) {
+export function InputUserName({value, onChange, warning, handleSetWarning: setWarning}: Props) {
     const handle = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
         if (!value || !USER_NAME_PATTERN.test(value)) {
@@ -16,7 +16,7 @@ export function InputUserName({value, setValue, warning, setWarning}: Props) {
         } else {
             setWarning(false);
         }
-        setValue(value)
+        onChange(value)
     }, [value])
 
     return (

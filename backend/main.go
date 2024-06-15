@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -35,7 +36,7 @@ func main() {
 
 	mux.HandleFunc("POST /login", loginHandler)
 	mux.HandleFunc("POST /users", createUserHandler)
-	mux.HandleFunc("PATCH /users", patchUserHandler)
+	mux.HandleFunc("PATCH /users/{id}", updateUserHandler)
 	mux.HandleFunc("GET /users/{name}", getUserHandler)
 
 	handler := cors.AllowAll().Handler(mux)
@@ -47,13 +48,13 @@ func newErrorResponse(err error) ErrorResponse {
 }
 
 func writeResponse(w http.ResponseWriter, code int, body any) {
+	w.WriteHeader(code)
 	if err := json.NewEncoder(w).Encode(body); err != nil {
 		log.Println(err)
 	}
-	w.WriteHeader(code)
 }
 
-func validateUser(user model.User) error {
+func validateUser(user model.CreateUser) error {
 	if utf8.RuneCountInString(user.Name) > consts.USER_NANE_MAX_LENGTH {
 		return errors.ErrorNameIsTooLong
 	}
@@ -61,6 +62,20 @@ func validateUser(user model.User) error {
 	if user.Bio != nil && utf8.RuneCountInString(*user.Bio) > consts.USER_BIO_MAX_LENGTH {
 		return errors.ErrorBioIsTooLong
 	}
+	return nil
+}
+
+func validateUpdateUser(user model.UpdateUser) error {
+	if user.Name != nil && utf8.RuneCountInString(*user.Name) > consts.USER_NANE_MAX_LENGTH {
+		return errors.ErrorNameIsTooLong
+	}
+
+	if user.Bio != nil && utf8.RuneCountInString(*user.Bio) > consts.USER_BIO_MAX_LENGTH {
+		return errors.ErrorBioIsTooLong
+	}
+
+	// TODO: 誕生日など
+
 	return nil
 }
 
@@ -91,13 +106,25 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := db.GetUserByName(r.PathValue("name"))
+	dbUser, err := db.GetUserByName(r.PathValue("name"))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
 	}
 
-	user.Password = ""
+	user := model.User{
+		Id:   dbUser.Id,
+		Name: dbUser.Name,
+	}
+
+	if dbUser.Bio.Valid {
+		user.Bio = &dbUser.Bio.V
+	}
+
+	if dbUser.Birthday.Valid {
+		user.Birthday = &dbUser.Birthday.V
+	}
+
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
@@ -105,7 +132,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
-	var user model.User
+	var user model.CreateUser
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
@@ -137,7 +164,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
-	dbUser := db.User{
+	dbUser := db.UserInfo{
 		Name:      user.Name,
 		Password:  string(hashed),
 		Birthday:  birthday,
@@ -155,53 +182,51 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func patchUserHandler(w http.ResponseWriter, r *http.Request) {
-	var user model.User
+func updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		// TODO
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		return
+	}
+
+	var user model.UpdateUser
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Println(err)
 		return
 	}
 
-	if err := validateUser(user); err != nil {
+	if err := validateUpdateUser(user); err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		log.Println(err)
 		return
 	}
 
-	patchMap := map[string]any{}
-	if user.Name != "" {
-		patchMap["name"] = user.Name
-	}
-	if user.Password != "" {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	// TODO: 古いパスワードのチェックも必要
+
+	var newPassword *string
+	if user.Password != nil {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(*user.Password), 10)
 		if err != nil {
 			writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
 			log.Println(err)
 			return
 		}
-		patchMap["password"] = string(hashed)
+		hashedPassword := string(hashed)
+		newPassword = &hashedPassword
 	}
-	//if user.Birthday.Valid {
-	//	if user.Birthday.V.IsZero() {
-	//		patchMap["birthday"] = sql.Null[time.Time]{}
-	//	} else {
-	//		patchMap["birthday"] = user.Birthday
-	//	}
 
-	//}
-	//if user.Bio.Valid {
-	//	if user.Bio.V == "" {
-	//		patchMap["bio"] = sql.Null[string]{V: "", Valid: false}
-	//	} else {
-	//		patchMap["bio"] = user.Bio
-	//	}
+	dbUser := db.UpdateUserInfo{
+		Id:       id,
+		Name:     user.Name,
+		Password: newPassword,
+		Birthday: &user.Birthday.Time,
+		Bio:      user.Bio,
+	}
 
-	//}
-	//patchMap["updated_at"] = time.Now()
-
-	//if err := db.PatchUser(user.Id, patchMap); err != nil {
-	//	writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
-	//	log.Println(err)
-	//	return
-	//}
+	if err := db.UpdateUser(dbUser); err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
 }

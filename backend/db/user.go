@@ -1,9 +1,12 @@
 package db
 
-import "strconv"
+import (
+	"fmt"
+	"strings"
+)
 
-func GetUserByName(name string) (User, error) {
-	var user User
+func GetUserByName(name string) (UserInfo, error) {
+	var user UserInfo
 	sql := "SELECT * FROM users WHERE name = ?;"
 	err := DB.QueryRow(sql, name).Scan(&user.Id, &user.Name, &user.Password, &user.Birthday, &user.Bio, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
@@ -13,7 +16,7 @@ func GetUserByName(name string) (User, error) {
 	return user, err
 }
 
-func CreateUser(user User) error {
+func CreateUser(user UserInfo) error {
 	sql := "INSERT INTO users (name, password, birthday, bio, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?)"
 	ins, err := DB.Prepare(sql)
 	if err != nil {
@@ -28,32 +31,43 @@ func CreateUser(user User) error {
 	return nil
 }
 
-func PatchUser(id int, patchMap map[string]any) error {
-	columns := []string{}
-	values := []any{}
-	for k, v := range patchMap {
-		columns = append(columns, k)
-		values = append(values, v)
-	}
-	values = append(values, strconv.Itoa(id))
+func UpdateUser(updateUser UpdateUserInfo) error {
+	baseSQL := "UPDATE users SET %s WHERE id = ?"
+	var columns []string
+	var values []any
 
-	var updateColumns string
-	for i, v := range columns {
-		updateColumns += v + " = ?"
-		if i == len(columns)-1 {
-			break
-		}
-		updateColumns += ", "
+	if updateUser.Name != nil {
+		columns = append(columns, "name = ?")
+		values = append(values, *updateUser.Name)
 	}
 
-	sql := "UPDATE users SET " + updateColumns + " WHERE id = ?"
-	upd, err := DB.Prepare(sql)
+	if updateUser.Password != nil {
+		columns = append(columns, "password = ?")
+		values = append(values, *updateUser.Bio)
+	}
+
+	if updateUser.Birthday != nil {
+		columns = append(columns, "birthday = ?")
+		values = append(values, *updateUser.Birthday)
+	}
+
+	if updateUser.Bio != nil {
+		columns = append(columns, "bio = ?")
+		values = append(values, *updateUser.Bio)
+	}
+
+	values = append(values, updateUser.Id)
+
+	query := fmt.Sprintf(baseSQL, strings.Join(columns, ", "))
+
+	fmt.Println("query", query)
+
+	stmt, err := DB.Prepare(query)
 	if err != nil {
 		return err
 	}
 
-	_, err = upd.Exec(values...)
-	if err != nil {
+	if _, err := stmt.Exec(values...); err != nil {
 		return err
 	}
 
