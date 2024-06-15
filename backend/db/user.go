@@ -1,7 +1,12 @@
 package db
 
-func GetUserByName(name string) (User, error) {
-	var user User
+import (
+	"fmt"
+	"strings"
+)
+
+func GetUserByName(name string) (UserInfo, error) {
+	var user UserInfo
 	sql := "SELECT * FROM users WHERE name = ?;"
 	err := DB.QueryRow(sql, name).Scan(&user.Id, &user.Name, &user.Password, &user.Birthday, &user.Bio, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
@@ -11,7 +16,7 @@ func GetUserByName(name string) (User, error) {
 	return user, err
 }
 
-func CreateUser(user User) error {
+func CreateUser(user UserInfo) error {
 	sql := "INSERT INTO users (name, password, birthday, bio, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?)"
 	ins, err := DB.Prepare(sql)
 	if err != nil {
@@ -23,5 +28,48 @@ func CreateUser(user User) error {
 		return err
 	}
 
-	return err
+	return nil
+}
+
+func UpdateUser(updateUser UpdateUserInfo) error {
+	baseSQL := "UPDATE users SET %s WHERE id = ?"
+	var columns []string
+	var values []any
+
+	if updateUser.Name != nil {
+		columns = append(columns, "name = ?")
+		values = append(values, *updateUser.Name)
+	}
+
+	if updateUser.Password != nil {
+		columns = append(columns, "password = ?")
+		values = append(values, *updateUser.Bio)
+	}
+
+	if updateUser.Birthday != nil {
+		columns = append(columns, "birthday = ?")
+		values = append(values, *updateUser.Birthday)
+	}
+
+	if updateUser.Bio != nil {
+		columns = append(columns, "bio = ?")
+		values = append(values, *updateUser.Bio)
+	}
+
+	values = append(values, updateUser.Id)
+
+	query := fmt.Sprintf(baseSQL, strings.Join(columns, ", "))
+
+	fmt.Println("query", query)
+
+	stmt, err := DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	if _, err := stmt.Exec(values...); err != nil {
+		return err
+	}
+
+	return nil
 }

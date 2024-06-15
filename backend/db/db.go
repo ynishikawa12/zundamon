@@ -7,13 +7,22 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-type User struct {
+type UserInfo struct {
 	Id        int
 	Name      string
 	Password  string
 	Birthday  sql.Null[time.Time]
 	Bio       sql.Null[string]
 	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type UpdateUserInfo struct {
+	Id        int
+	Name      *string
+	Password  *string
+	Birthday  *time.Time
+	Bio       *string
 	UpdatedAt time.Time
 }
 
