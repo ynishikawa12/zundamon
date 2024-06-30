@@ -1,0 +1,1 @@
+export const MAX_VOICE_TEXT_LENGTH = 200;
