@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -235,24 +236,31 @@ func createVoiceHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
 		return
 	}
 
 	var voiceText model.VoiceText
 	if err := json.NewDecoder(r.Body).Decode(&voiceText); err != nil {
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
 		return
 	}
 
 	voice, err := db.CreateVoice(voiceText.Text, id)
 	if err != nil {
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
 		return
 	}
+	defer voice.Close()
 
-	response := map[string]string{"audio": voice}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.Header().Set("Content-Type", "audio/wav")
+	_, err = io.Copy(w, voice)
+	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
 
 }

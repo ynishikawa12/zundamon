@@ -2,8 +2,6 @@ package db
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,82 +9,58 @@ import (
 	"zundamon/consts"
 )
 
-func createVoiceVoxQuery(text string) (any, error) {
-	url, err := url.Parse(consts.CREATE_QUERY_URL)
+func createVoiceVoxVoice(text string) (io.ReadCloser, error) {
+	// 音声生成用クエリ作成
+	queryUrl, err := url.Parse(consts.CREATE_QUERY_URL)
 	if err != nil {
 		return nil, err
 	}
 
-	query := url.Query()
+	query := queryUrl.Query()
 	query.Set("text", text)
 	query.Set("speaker", "1")
-	url.RawQuery = query.Encode()
-	fmt.Println(url.String())
+	queryUrl.RawQuery = query.Encode()
+	fmt.Println(queryUrl.String())
+	queryResp, err := http.Post(queryUrl.String(), "application/json", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer queryResp.Body.Close()
 
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", url.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	respQuery, err := io.ReadAll(queryResp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return body, nil
-}
-
-func createVoiceVoxVoice(voiceVoxQuery any) (string, error) {
-	url, err := url.Parse(consts.CREATE_VOICE_URL)
+	// 音声生成
+	voiceUrl, err := url.Parse(consts.CREATE_VOICE_URL)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	query := url.Query()
-	query.Set("speaker", "1")
-
-	marshalled, err := json.Marshal(voiceVoxQuery)
+	voiceQuery := voiceUrl.Query()
+	voiceQuery.Set("speaker", "1")
+	voiceUrl.RawQuery = voiceQuery.Encode()
+	voiceResp, err := http.Post(voiceUrl.String(), "application/json", bytes.NewBuffer(respQuery))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	voiceReq, err := http.NewRequest("POST", url.String(), bytes.NewReader(marshalled))
-	if err != nil {
-		return "", err
-	}
+	// audioData, err := io.ReadAll(voiceResp.Body)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	client := &http.Client{}
-	voiceResp, err := client.Do(voiceReq)
-	if err != nil {
-		return "", err
-	}
-	defer voiceResp.Body.Close()
+	//base64Audio := base64.StdEncoding.EncodeToString(audioData)
 
-	audioData, err := io.ReadAll(voiceResp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	base64Audio := base64.StdEncoding.EncodeToString(audioData)
-
-	return base64Audio, nil
+	return voiceResp.Body, nil
 }
 
 // anyかえる
-func CreateVoice(text string, userId int) (string, error) {
-	query, err := createVoiceVoxQuery(text)
+func CreateVoice(text string, userId int) (io.ReadCloser, error) {
+	voice, err := createVoiceVoxVoice(text)
 	if err != nil {
-		return "", err
-	}
-
-	voice, err := createVoiceVoxVoice(query)
-	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	return voice, nil
