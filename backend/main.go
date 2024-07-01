@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -38,6 +39,7 @@ func main() {
 	mux.HandleFunc("POST /users", createUserHandler)
 	mux.HandleFunc("PATCH /users/{id}", updateUserHandler)
 	mux.HandleFunc("GET /users/{name}", getUserHandler)
+	mux.HandleFunc("POST /voices/{id}", createVoiceHandler)
 
 	handler := cors.AllowAll().Handler(mux)
 	log.Fatal(http.ListenAndServe(":8080", handler))
@@ -185,7 +187,6 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		// TODO
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
 		return
 	}
@@ -229,4 +230,37 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+}
+
+func createVoiceHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
+	var voiceText model.VoiceText
+	if err := json.NewDecoder(r.Body).Decode(&voiceText); err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
+	voice, err := db.CreateVoice(voiceText.Text, id)
+	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+	defer voice.Close()
+
+	w.Header().Set("Content-Type", "audio/wav")
+	_, err = io.Copy(w, voice)
+	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
 }
