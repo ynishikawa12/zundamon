@@ -255,12 +255,24 @@ func createVoiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer voice.Close()
 
-	w.Header().Set("Content-Type", "audio/wav")
-	_, err = io.Copy(w, voice)
+	bytesVoice, err := io.ReadAll(voice)
 	if err != nil {
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
 		log.Println(err)
 		return
 	}
 
+	base64Voice := base64.StdEncoding.EncodeToString(bytesVoice)
+
+	voiceRes := model.Voice{
+		Text:      voiceText.Text,
+		Voice:     base64Voice,
+		CreatedAt: time.Now(),
+	}
+
+	if err := json.NewEncoder(w).Encode(voiceRes); err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
 }
