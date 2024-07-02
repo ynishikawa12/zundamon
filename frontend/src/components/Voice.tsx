@@ -1,9 +1,8 @@
 import axios from "axios";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { SERVER_URL, VOICES_URL } from "../consts/url";
 import { MAX_VOICE_TEXT_LENGTH } from "../consts/voice";
 import { useParams } from "react-router-dom";
-import { Buffer } from "buffer";
 
 type Voice = {
   id: number;
@@ -14,7 +13,6 @@ type Voice = {
 
 export function Voice() {
   const [testVoice, setTestVoice] = useState<Blob>();
-  const [testVoiceUrl, setTestVoiceUrl] = useState("");
   const [voices, setVoices] = useState<Voice[]>([]);
   const [voiceText, setVoiceText] = useState<string>();
   const params = useParams();
@@ -25,15 +23,6 @@ export function Voice() {
     axios.post(url, textObj, {responseType: "blob"})
     .then((response) => {
       console.log("res", response.data);
-      // Bufferに変換
-      // const byteArray = Buffer.from(response.data.audio, 'base64')
-      // console.log("byteArray",byteArray);
-      // Blobに変換
-      // const audioBlob = new Blob([byteArray], { type: 'audio/wav' })
-      // console.log("audioBlob",audioBlob)
-      // // URLに変換
-      // const audioUrl = URL.createObjectURL(audioBlob)
-      // console.log(audioUrl);
       setTestVoice(response.data as Blob)
     })
     .catch((error) => {
@@ -43,7 +32,7 @@ export function Voice() {
 
   const handleVoiceText = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setVoiceText(e.target.value), [voiceText]);
 
-  const voicesJsx = useCallback(() => {
+  const voicesJsx = useMemo(() => {
     voices.map((voice) => {
       const blobUrl = URL.createObjectURL(voice.voice);
       return (

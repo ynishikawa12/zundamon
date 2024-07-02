@@ -1,8 +1,7 @@
-package db
+package voice
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,7 +19,6 @@ func createVoiceVoxVoice(text string) (io.ReadCloser, error) {
 	query.Set("text", text)
 	query.Set("speaker", "1")
 	queryUrl.RawQuery = query.Encode()
-	fmt.Println(queryUrl.String())
 	queryResp, err := http.Post(queryUrl.String(), "application/json", nil)
 	if err != nil {
 		return nil, err
@@ -46,17 +44,9 @@ func createVoiceVoxVoice(text string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	// audioData, err := io.ReadAll(voiceResp.Body)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	//base64Audio := base64.StdEncoding.EncodeToString(audioData)
-
 	return voiceResp.Body, nil
 }
 
-// anyかえる
 func CreateVoice(text string, userId int) (io.ReadCloser, error) {
 	voice, err := createVoiceVoxVoice(text)
 	if err != nil {

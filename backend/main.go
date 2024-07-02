@@ -11,13 +11,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"zundamon/errors"
-	"zundamon/model"
-
-	"database/sql"
-
 	"zundamon/consts"
 	"zundamon/db"
+	"zundamon/errors"
+	"zundamon/model"
+	"zundamon/voice"
+
+	"database/sql"
 
 	"github.com/rs/cors"
 	"golang.org/x/crypto/bcrypt"
@@ -247,7 +247,7 @@ func createVoiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	voice, err := db.CreateVoice(voiceText.Text, id)
+	voice, err := voice.CreateVoice(voiceText.Text, id)
 	if err != nil {
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
 		log.Println(err)
