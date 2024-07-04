@@ -2,13 +2,17 @@ package voice
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 	"zundamon/consts"
+	"zundamon/db"
+	"zundamon/model"
 )
 
-func createVoiceVoxVoice(text string) (io.ReadCloser, error) {
+func createVoiceVoxVoice(text string) ([]byte, error) {
 	// 音声生成用クエリ作成
 	queryUrl, err := url.Parse(consts.CREATE_QUERY_URL)
 	if err != nil {
@@ -39,19 +43,42 @@ func createVoiceVoxVoice(text string) (io.ReadCloser, error) {
 	voiceQuery := voiceUrl.Query()
 	voiceQuery.Set("speaker", "1")
 	voiceUrl.RawQuery = voiceQuery.Encode()
-	voiceResp, err := http.Post(voiceUrl.String(), "application/json", bytes.NewBuffer(respQuery))
+	respVoice, err := http.Post(voiceUrl.String(), "application/json", bytes.NewBuffer(respQuery))
+	if err != nil {
+		return nil, err
+	}
+	defer respVoice.Body.Close()
+
+	voiceData, err := io.ReadAll(respVoice.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return voiceResp.Body, nil
+	return voiceData, nil
 }
 
-func CreateVoice(text string, userId int) (io.ReadCloser, error) {
-	voice, err := createVoiceVoxVoice(text)
+func CreateVoice(text string, userId int) (*model.Voice, error) {
+	voiceData, err := createVoiceVoxVoice(text)
 	if err != nil {
 		return nil, err
 	}
 
-	return voice, nil
+	now := time.Now()
+	insertVoice := db.InsertVoiceInfo{
+		Text:      text,
+		Voice:     voiceData,
+		CreatedAt: now,
+		UserId:    userId,
+	}
+	if err := db.InsertVoice(insertVoice); err != nil {
+		return nil, err
+	}
+
+	modelVoice := model.Voice{
+		Text:      text,
+		Voice:     base64.StdEncoding.EncodeToString(voiceData),
+		CreatedAt: now,
+	}
+
+	return &modelVoice, nil
 }

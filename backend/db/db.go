@@ -27,7 +27,12 @@ type UpdateUserInfo struct {
 }
 
 type VoiceInfo struct {
-	Id        int
+	Text      string
+	Voice     []byte
+	CreatedAt time.Time
+}
+
+type InsertVoiceInfo struct {
 	Text      string
 	Voice     []byte
 	CreatedAt time.Time

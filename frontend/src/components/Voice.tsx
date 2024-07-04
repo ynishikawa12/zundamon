@@ -1,10 +1,15 @@
 import axios from "axios";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SERVER_URL, VOICES_URL } from "../consts/url";
 import { MAX_VOICE_TEXT_LENGTH } from "../consts/voice";
 import { useParams } from "react-router-dom";
 import { Buffer } from "buffer";
 
+type VoiceData = {
+  text: string;
+  voice: string;
+  createdAt: string;
+}
 
 type Voice = {
   text: string;
@@ -12,26 +17,45 @@ type Voice = {
   createdAt: string;
 };
 
+function parseVoiceData(data: VoiceData): Voice {
+  const buffer = Buffer.from(data.voice, "base64");
+  const blob = new Blob([buffer], {type: "audio/wav"});
+
+  const voice: Voice = {
+    text: data.text,
+    voice: blob,
+    createdAt: data.createdAt.slice(0, 19).replace("T", " "),
+  }
+  return voice;
+}
+
 export function Voice() {
   const [voices, setVoices] = useState<Voice[]>([]);
   const [voiceText, setVoiceText] = useState<string>();
   const params = useParams();
+
+  const getVoices = useCallback(() => {
+    const url = SERVER_URL + VOICES_URL + "/" + params.id
+    axios.get(url)
+    .then((response) => {
+      const voices: Voice[] = response.data.map((data: VoiceData) => {
+        return parseVoiceData(data)
+      })
+      setVoices(voices)
+    })
+    .catch((error) =>{
+      console.log(error)
+    })
+  }, [])
 
   const handlePostRequest = useCallback(() => {
     const url = SERVER_URL + VOICES_URL + "/" + params.id
     const textObj = { text: voiceText }
     axios.post(url, textObj, {})
     .then((response) => {
-      const buffer = Buffer.from(response.data.voice, "base64");
-      const blob = new Blob([buffer], {type: "audio/wav"});
-      console.log(response.data)
-      const voice: Voice = {
-        text: response.data.text,
-        voice: blob,
-        createdAt: response.data.createdAt.slice(0, 19).replace("T", " "),
-      }
+      const voice = parseVoiceData(response.data)
 
-      setVoices([...voices, voice]);
+      setVoices([voice, ...voices]);
     })
     .catch((error) => {
       console.log(error);
@@ -44,7 +68,6 @@ export function Voice() {
   const voicesJsx = useMemo(() => {
     const jsx = voices.map((voice) => {
       const blobUrl = URL.createObjectURL(voice.voice);
-      console.log(voice)
       return (
         <div>
           <audio src={blobUrl}></audio>
@@ -62,7 +85,8 @@ export function Voice() {
     return jsx
   }, [voices]);
 
-  console.log(voicesJsx)
+  useEffect(getVoices, [])
+
   return (
     <>
       セリフ：<textarea maxLength={MAX_VOICE_TEXT_LENGTH} value={voiceText} onChange={handleVoiceText}></textarea>

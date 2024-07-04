@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -39,6 +38,7 @@ func main() {
 	mux.HandleFunc("POST /users", createUserHandler)
 	mux.HandleFunc("PATCH /users/{id}", updateUserHandler)
 	mux.HandleFunc("GET /users/{name}", getUserHandler)
+	mux.HandleFunc("GET /voices/{id}", getVoicesHandler)
 	mux.HandleFunc("POST /voices/{id}", createVoiceHandler)
 
 	handler := cors.AllowAll().Handler(mux)
@@ -232,6 +232,27 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getVoicesHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
+	modelVoices, err := db.GetVoices(id)
+	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(modelVoices); err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		return
+	}
+}
+
 func createVoiceHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -247,30 +268,14 @@ func createVoiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	voice, err := voice.CreateVoice(voiceText.Text, id)
-	if err != nil {
-		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
-		log.Println(err)
-		return
-	}
-	defer voice.Close()
-
-	bytesVoice, err := io.ReadAll(voice)
+	modelVoice, err := voice.CreateVoice(voiceText.Text, id)
 	if err != nil {
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
 		log.Println(err)
 		return
 	}
 
-	base64Voice := base64.StdEncoding.EncodeToString(bytesVoice)
-
-	voiceRes := model.Voice{
-		Text:      voiceText.Text,
-		Voice:     base64Voice,
-		CreatedAt: time.Now(),
-	}
-
-	if err := json.NewEncoder(w).Encode(voiceRes); err != nil {
+	if err := json.NewEncoder(w).Encode(modelVoice); err != nil {
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
 		log.Println(err)
 		return
