@@ -70,11 +70,13 @@ func CreateVoice(text string, userId int) (*model.Voice, error) {
 		CreatedAt: now,
 		UserId:    userId,
 	}
-	if err := db.InsertVoice(insertVoice); err != nil {
+	insertId, err := db.InsertVoice(insertVoice)
+	if err != nil {
 		return nil, err
 	}
 
 	modelVoice := model.Voice{
+		Id:        int(insertId),
 		Text:      text,
 		Voice:     base64.StdEncoding.EncodeToString(voiceData),
 		CreatedAt: now,

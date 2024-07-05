@@ -40,6 +40,7 @@ func main() {
 	mux.HandleFunc("GET /users/{name}", getUserHandler)
 	mux.HandleFunc("GET /voices/{id}", getVoicesHandler)
 	mux.HandleFunc("POST /voices/{id}", createVoiceHandler)
+	mux.HandleFunc("DELETE /voices/{id}", deleteVoinceHandler)
 
 	handler := cors.AllowAll().Handler(mux)
 	log.Fatal(http.ListenAndServe(":8080", handler))
@@ -276,6 +277,21 @@ func createVoiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(modelVoice); err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+}
+
+func deleteVoinceHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
+	if err := db.DeleteVoice(id); err != nil {
 		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
 		log.Println(err)
 		return

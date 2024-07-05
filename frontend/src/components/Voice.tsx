@@ -5,23 +5,26 @@ import { MAX_VOICE_TEXT_LENGTH } from "../consts/voice";
 import { useParams } from "react-router-dom";
 import { Buffer } from "buffer";
 
-type VoiceData = {
+type VoiceResponse = {
+  id: string;
   text: string;
   voice: string;
   createdAt: string;
 }
 
 type Voice = {
+  id: string;
   text: string;
   voice: Blob;
   createdAt: string;
 };
 
-function parseVoiceData(data: VoiceData): Voice {
+function parseVoiceResponse(data: VoiceResponse): Voice {
   const buffer = Buffer.from(data.voice, "base64");
   const blob = new Blob([buffer], {type: "audio/wav"});
 
   const voice: Voice = {
+    id: data.id,
     text: data.text,
     voice: blob,
     createdAt: data.createdAt.slice(0, 19).replace("T", " "),
@@ -38,8 +41,8 @@ export function Voice() {
     const url = SERVER_URL + VOICES_URL + "/" + params.id
     axios.get(url)
     .then((response) => {
-      const voices: Voice[] = response.data.map((data: VoiceData) => {
-        return parseVoiceData(data)
+      const voices: Voice[] = response.data.map((data: VoiceResponse) => {
+        return parseVoiceResponse(data)
       })
       setVoices(voices)
     })
@@ -53,15 +56,29 @@ export function Voice() {
     const textObj = { text: voiceText }
     axios.post(url, textObj, {})
     .then((response) => {
-      const voice = parseVoiceData(response.data)
-
+      const voice = parseVoiceResponse(response.data)
       setVoices([voice, ...voices]);
+      setVoiceText("");
     })
     .catch((error) => {
       console.log(error);
       alert("音声の作成に失敗しました");
     });
   }, [voiceText])
+
+  const handleDeleteRequest = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const id = e.currentTarget.dataset.id
+    const url = SERVER_URL + VOICES_URL + "/" + id
+    axios.delete(url)
+    .then(() => {
+      const newVoices = voices.filter(voice => voice.id != id)
+      setVoices(newVoices)
+    })
+    .catch((error) => {
+      console.log(error);
+      alert("削除に失敗しました");
+    })
+  },[voices])
 
   const handleVoiceText = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setVoiceText(e.target.value), [voiceText]);
 
@@ -77,7 +94,7 @@ export function Voice() {
             controls
             src={blobUrl}>
           </audio>
-          <button>削除</button>
+          <button data-id={voice.id} onClick={handleDeleteRequest}>削除</button>
         </div>
       );
     });
