@@ -26,6 +26,20 @@ type UpdateUserInfo struct {
 	UpdatedAt time.Time
 }
 
+type VoiceInfo struct {
+	Id        int
+	Text      string
+	Voice     []byte
+	CreatedAt time.Time
+}
+
+type InsertVoiceInfo struct {
+	Text      string
+	Voice     []byte
+	CreatedAt time.Time
+	UserId    int
+}
+
 var DB *sql.DB
 
 func InitDB() error {

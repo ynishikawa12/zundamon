@@ -127,7 +127,6 @@ export function Profile({ loginedUserName }: Props) {
 
   const getUser = useCallback(
     (userName: string) => {
-      console.log(SERVER_URL + USER_URL + "/" + userName);
       axios
         .get(SERVER_URL + USER_URL + "/" + userName)
         .then(function (response) {
