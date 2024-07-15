@@ -28,7 +28,7 @@ type ActionType =
   | typeof SET_ID;
 
 type Props = {
-  loginedUserName: string;
+  loginedUserId: number;
 };
 
 interface FormState {
@@ -79,7 +79,7 @@ function reducer(state: FormState, action: Action) {
   }
 }
 
-export function Profile({ loginedUserName }: Props) {
+export function Profile({ loginedUserId: loginedUserId }: Props) {
   const [state, dispatch] = useReducer(reducer, {
     id: "",
     name: "",
@@ -126,9 +126,10 @@ export function Profile({ loginedUserName }: Props) {
   const navigate = useNavigate();
 
   const getUser = useCallback(
-    (userName: string) => {
+    (userId: number) => {
+      console.log("userId", userId);
       axios
-        .get(SERVER_URL + USER_URL + "/" + userName)
+        .get(SERVER_URL + USER_URL + "/" + userId)
         .then(function (response) {
           dispatch({
             type: SET_ID,
@@ -228,7 +229,7 @@ export function Profile({ loginedUserName }: Props) {
     );
   }, [canEditBio, state.bio]);
 
-  useEffect(() => getUser(loginedUserName), [loginedUserName]);
+  useEffect(() => getUser(loginedUserId), [loginedUserId]);
 
   return (
     <>
