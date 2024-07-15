@@ -44,3 +44,7 @@ type UpdateUser struct {
 	Birthday *CustomDate `json:"birthday"`
 	Bio      *string     `json:"bio"`
 }
+
+type UserId struct {
+	Id int `json:"id"`
+}

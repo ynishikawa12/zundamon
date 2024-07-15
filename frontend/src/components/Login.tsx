@@ -4,10 +4,10 @@ import { SERVER_URL, LOGIN_URL } from "../consts/url";
 import { useNavigate } from "react-router-dom";
 
 type Props = {
-    setLoginedUserName: React.Dispatch<SetStateAction<string>>;
+    setLoginedUserId: React.Dispatch<SetStateAction<number>>;
 }
 
-export function Login ({setLoginedUserName}: Props) {
+export function Login ({setLoginedUserId: setLoginedUserName}: Props) {
     const [userName, setUserName] = useState<string>();
     const [password, setPassowrd] = useState<string>();
     const [loginFailed, setLoginFailed] = useState<boolean>(false);
@@ -30,13 +30,14 @@ export function Login ({setLoginedUserName}: Props) {
 
         axios.post((SERVER_URL + LOGIN_URL), {}, {headers: headers})
         .then(function (response) {
-            if (response.status === 204) {
+            if (response.status === 200) {
                 // TODO 音声合成画面へ遷移
                 setLoginFailed(false);
-                setLoginedUserName(userName)
+                console.log("login",response)
+                setLoginedUserName(response.data.id);
                 alert("ログイン成功");
                 navigate("/profile")
-            } else if (response.status != 204) {
+            } else if (response.status != 200) {
                 setLoginFailed(true);
                 console.log("not 204", response.data);
             }

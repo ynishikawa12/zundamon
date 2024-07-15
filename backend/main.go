@@ -37,7 +37,7 @@ func main() {
 	mux.HandleFunc("POST /login", loginHandler)
 	mux.HandleFunc("POST /users", createUserHandler)
 	mux.HandleFunc("PATCH /users/{id}", updateUserHandler)
-	mux.HandleFunc("GET /users/{name}", getUserHandler)
+	mux.HandleFunc("GET /users/{id}", getUserHandler)
 	mux.HandleFunc("GET /voices/{id}", getVoicesHandler)
 	mux.HandleFunc("POST /voices/{id}", createVoiceHandler)
 	mux.HandleFunc("DELETE /voices/{id}", deleteVoinceHandler)
@@ -105,11 +105,25 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	userId := model.UserId{
+		Id: user.Id,
+	}
+
+	if err := json.NewEncoder(w).Encode(userId); err != nil {
+		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
+		return
+	}
 }
 
 func getUserHandler(w http.ResponseWriter, r *http.Request) {
-	dbUser, err := db.GetUserByName(r.PathValue("name"))
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		writeResponse(w, http.StatusInternalServerError, newErrorResponse(err))
+		log.Println(err)
+		return
+	}
+
+	dbUser, err := db.GetUserById(id)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, newErrorResponse(err))
 		return
@@ -182,7 +196,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func updateUserHandler(w http.ResponseWriter, r *http.Request) {

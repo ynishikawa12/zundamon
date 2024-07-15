@@ -5,6 +5,17 @@ import (
 	"strings"
 )
 
+func GetUserById(id int) (UserInfo, error) {
+	var user UserInfo
+	sql := "SELECT * FROM users WHERE id = ?;"
+	err := DB.QueryRow(sql, id).Scan(&user.Id, &user.Name, &user.Password, &user.Birthday, &user.Bio, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return user, err
+	}
+
+	return user, err
+}
+
 func GetUserByName(name string) (UserInfo, error) {
 	var user UserInfo
 	sql := "SELECT * FROM users WHERE name = ?;"
